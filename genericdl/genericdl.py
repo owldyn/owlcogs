@@ -46,7 +46,7 @@ class Genericdl(commands.Cog):
 
     @commands.command()
     async def gimmemp3(self, ctx, url):
-        """Downloads the linked video"""
+        """Downloads the linked audio"""
         async with ctx.typing():
             if url[0] == '<':
                 url = url[1:len(url)-1]
