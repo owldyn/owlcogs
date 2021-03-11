@@ -18,6 +18,8 @@ class ToDoList(commands.Cog):
     #        }
     #    }
     #}
+    CHECK_MARK = "✅"
+    X_MARK = "❌"
     default_global_settings = {
         "lists": {}
     }
@@ -27,27 +29,35 @@ class ToDoList(commands.Cog):
         self.bot = bot
         self.config = Config.get_conf(self, 8996998)
         self.config.register_global(**self.default_global_settings)                
-            
+
     @commands.group()
     async def todolist(self, ctx):
         """General list command."""
 
+    async def check_exists(self, authid, list_name):
+        async with self.config.lists() as listss:
+            try:
+                tmp = listss[str(authid)][str(list_name)]
+                return True
+            except:
+                return False
+
     @todolist.command(aliases=["createlist"])
-    async def create(self, ctx, *, list_name: str):
-        """Creates a list. Usage: [p]todolist create My List"""
+    async def create(self, ctx, list_name: str):
+        """Creates a list. List name must be one word."""
         author = ctx.message.author
         async with self.config.lists() as listss:
             try:
-                tmp = listss[f'{author.id}']
+                tmp = listss[str(author.id)]
             except:
-                listss[f'{author.id}'] = {}
+                listss[str(author.id)] = {}
                 await ctx.send('Looks like you\'re a new user! Adding your ID to the list.')
             
             try:
-                tmp = listss[f'{author.id}'][list_name]
+                tmp = listss[str(author.id)][list_name]
                 await ctx.send(f'You already have a list named {list_name}!')
             except:
-                listss[f'{author.id}'][list_name] = {}
+                listss[str(author.id)][list_name] = {}
                 await ctx.send(f'Created list {list_name}!')
                
     @todolist.command()
@@ -57,11 +67,74 @@ class ToDoList(commands.Cog):
         lists = ""
         async with self.config.lists() as listss:
             try:
-                for key, value in listss[f'{author.id}'].items():
+                for key, value in listss[str(author.id)].items():
                     lists = lists + '\n' + key
                 await ctx.send(f'```{lists}```')
             except:
-                await ctx.send(f'Error. Either you have no lists or some unknown exception happened.')
+                await ctx.send(f'Error. Do you have any lists?')
 
-                    
+    @todolist.command()
+    async def additem(self, ctx, list_name: str, *, item_name: str):
+        """Adds an item to a list"""
+        author = ctx.message.author
+        if (await self.check_exists(author.id, list_name)):
+            async with self.config.lists() as listss:
+                listss[str(author.id)][list_name][item_name] = False
+            await ctx.send(f'Created item {item_name} in list {list_name}.')
+        else:
+            await ctx.send(f'List {list_name} doesn\'t exist!')
 
+    async def _create_list_embed(self, ctx, list_name, listss):
+        author = ctx.message.author
+        lists = ""
+        for key, value in listss[str(author.id)][list_name].items():
+            lists = lists + '\n'
+            if value is False:
+                lists = lists + self.X_MARK
+            else:
+                lists = lists + self.CHECK_MARK
+            lists = lists + " " + key
+        return discord.Embed(title = list_name, description = lists)
+        
+
+    @todolist.command()
+    async def listitems(self, ctx, list_name: str):
+        """Prints out all of the items in one of your lists"""
+        author = ctx.message.author
+        lists = ""
+        async with self.config.lists() as listss:
+            try:
+                e = await self._create_list_embed(ctx, list_name, listss)
+                await ctx.send(embed=e)
+            except:
+                await ctx.send(f'Error. Does that list have any items?')  
+
+    @todolist.command()
+    async def checkitem(self, ctx, list_name, *, item_name):
+        """Checks off an item in a list"""
+        author = ctx.message.author
+        async with self.config.lists() as listss:
+            if self.check_exists(author.id, list_name):
+                listss[str(author.id)][list_name][item_name] = True
+                try:
+                    e = await self._create_list_embed(ctx, list_name, listss)
+                    await ctx.send(embed=e)
+                except:
+                    await ctx.send(f'Error. Does that list have any items?')  
+            else:
+                await ctx.send(f'Error. Does that list exist?')
+                
+    @todolist.command()
+    async def uncheckitem(self, ctx, list_name, *, item_name):
+        """Unchecks an item in a list"""
+        author = ctx.message.author
+        async with self.config.lists() as listss:
+            if self.check_exists(author.id, list_name):
+                listss[str(author.id)][list_name][item_name] = False
+                try:
+                    e = await self._create_list_embed(ctx, list_name, listss)
+                    await ctx.send(embed=e)
+                except:
+                    await ctx.send(f'Error. Does that list have any items?')  
+            else:
+                await ctx.send(f'Error. Does that list exist?')
