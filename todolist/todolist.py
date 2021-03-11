@@ -30,7 +30,7 @@ class ToDoList(commands.Cog):
             
     @commands.group()
     async def todolist(self, ctx):
-        """General list command. Used to check off, delete, and append to lists. """
+        """General list command."""
 
     @todolist.command(aliases=["createlist"])
     async def create(self, ctx, *, list_name: str):
@@ -39,7 +39,6 @@ class ToDoList(commands.Cog):
         async with self.config.lists() as listss:
             try:
                 tmp = listss[f'{author.id}']
-                await ctx.send(f'a')
             except:
                 listss[f'{author.id}'] = {}
                 await ctx.send('Looks like you\'re a new user! Adding your ID to the list.')
@@ -51,4 +50,18 @@ class ToDoList(commands.Cog):
                 listss[f'{author.id}'][list_name] = {}
                 await ctx.send(f'Created list {list_name}!')
                
+    @todolist.command()
+    async def list(self, ctx):
+        """Prints out all of your lists"""
+        author = ctx.message.author
+        lists = ""
+        async with self.config.lists() as listss:
+            try:
+                for key, value in listss[f'{author.id}'].items():
+                    lists = lists + '\n' + key
+                await ctx.send(f'```{lists}```')
+            except:
+                await ctx.send(f'Error. Either you have no lists or some unknown exception happened.')
+
+                    
 
