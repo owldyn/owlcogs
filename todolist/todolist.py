@@ -58,7 +58,8 @@ class ToDoList(commands.Cog):
                 await ctx.send(f'You already have a list named {list_name}!')
             except:
                 listss[str(author.id)][list_name] = {}
-                await ctx.send(f'Created list {list_name}!')
+                #await ctx.send(f'Created list {list_name}!')
+                await ctx.message.add_reaction(self.CHECK_MARK)
                
     @todolist.command()
     async def list(self, ctx):
@@ -80,7 +81,8 @@ class ToDoList(commands.Cog):
         if (await self.check_exists(author.id, list_name)):
             async with self.config.lists() as listss:
                 listss[str(author.id)][list_name][item_name] = False
-            await ctx.send(f'Created item {item_name} in list {list_name}.')
+            #await ctx.send(f'Created item {item_name} in list {list_name}.')
+            await ctx.message.add_reaction(self.CHECK_MARK)
         else:
             await ctx.send(f'List {list_name} doesn\'t exist!')
 
