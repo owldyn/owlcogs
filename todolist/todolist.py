@@ -150,9 +150,9 @@ class ToDoList(commands.Cog):
             else:
                 await ctx.send(f'Error. Does that list exist?')
     
-    @todolist.command()
+    @todolist.command(aliases=["removeitem"])
     async def deleteitem(self, ctx, list_name, *, item_name):
-        """Deletes an item from a list"""
+        """Deletes an item from a list. Removeitem also works."""
         author = ctx.message.author
         async with self.config.lists() as listss:
             if self.check_exists(author.id, list_name):
