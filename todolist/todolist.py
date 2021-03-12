@@ -70,7 +70,8 @@ class ToDoList(commands.Cog):
             try:
                 for key, value in listss[str(author.id)].items():
                     lists = lists + '\n' + key
-                await ctx.send(f'```{lists}```')
+                e = discord.Embed(title = author.name, description = lists)
+                await ctx.send(embed=e)
             except:
                 await ctx.send(f'Error. Do you have any lists?')
 
@@ -146,5 +147,24 @@ class ToDoList(commands.Cog):
                     await ctx.send(embed=e)
                 except:
                     await ctx.send(f'Error. Does that list have any items?')  
+            else:
+                await ctx.send(f'Error. Does that list exist?')
+    
+    @todolist.command()
+    async def deleteitem(self, ctx, list_name, *, item_name):
+        """Deletes an item from a list"""
+        author = ctx.message.author
+        async with self.config.lists() as listss:
+            if self.check_exists(author.id, list_name):
+                try:
+                    tmp = listss[str(author.id)][list_name][item_name]
+                    del(listss[str(author.id)][list_name][item_name])
+                except:
+                    await ctx.send("Error. Check that you spelled the item correctly.")
+                try:
+                    e = await self._create_list_embed(ctx, list_name, listss)
+                    await ctx.send(embed=e)
+                except:
+                    await ctx.send(f'Error. Does that list have any items?')
             else:
                 await ctx.send(f'Error. Does that list exist?')
