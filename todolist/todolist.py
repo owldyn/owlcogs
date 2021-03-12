@@ -117,7 +117,11 @@ class ToDoList(commands.Cog):
         author = ctx.message.author
         async with self.config.lists() as listss:
             if self.check_exists(author.id, list_name):
-                listss[str(author.id)][list_name][item_name] = True
+                try:
+                    tmp = listss[str(author.id)][list_name][item_name]
+                    listss[str(author.id)][list_name][item_name] = True
+                except:
+                    await ctx.send("Error. Check that you spelled the item correctly.")
                 try:
                     e = await self._create_list_embed(ctx, list_name, listss)
                     await ctx.send(embed=e)
@@ -132,7 +136,11 @@ class ToDoList(commands.Cog):
         author = ctx.message.author
         async with self.config.lists() as listss:
             if self.check_exists(author.id, list_name):
-                listss[str(author.id)][list_name][item_name] = False
+                try:
+                    tmp = listss[str(author.id)][list_name][item_name]
+                    listss[str(author.id)][list_name][item_name] = False
+                except:
+                    await ctx.send("Error. Check that you spelled the item correctly.")
                 try:
                     e = await self._create_list_embed(ctx, list_name, listss)
                     await ctx.send(embed=e)
