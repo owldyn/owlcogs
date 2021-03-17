@@ -168,3 +168,17 @@ class ToDoList(commands.Cog):
                     await ctx.send(f'Error. Does that list have any items?')
             else:
                 await ctx.send(f'Error. Does that list exist?')
+    
+    @todolist.command()
+    async def massadd(self, ctx, list_name, *, item_name):
+        """Adds many items to a list. Use | between items, 'item1 | item2'"""
+        item_split = item_name.split('|')
+        author = ctx.message.author
+        if (await self.check_exists(author.id, list_name)):
+            async with self.config.lists() as listss:
+                for item in item_split:
+                    listss[str(author.id)][list_name][item] = False
+            await ctx.message.add_reaction(self.CHECK_MARK)
+        else:
+            await ctx.send(f'List {list_name} doesn\'t exist!')
+
