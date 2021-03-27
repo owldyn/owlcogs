@@ -187,7 +187,7 @@ class VRedditDL(commands.Cog):
             else:
                 titleraw = subprocess.run(['youtube-dl', '--get-title', url], capture_output=True)
                 title = titleraw.stdout.decode("utf-8")[0:len(titleraw.stdout)-1]
-                e = discord.Embed(description=title)
+                e = discord.Embed(title=title)
                 e.set_image(url=imglink)
                 await ctx.send(embed=e)
                 await ctx.message.edit(suppress=True)
