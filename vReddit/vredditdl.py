@@ -17,6 +17,7 @@ class VRedditDL(commands.Cog):
         self.bot = bot
 
     async def file_size(self, fname):
+        """check filesize"""
         statinfo = os.stat(fname)
         return statinfo.st_size
 
@@ -147,6 +148,7 @@ class VRedditDL(commands.Cog):
 
     @commands.command()
     async def Hoot(self, ctx):
+        """Sends 10 hoots"""
         test: discord.Message = await ctx.send("Hoot!")
         i = 0
         while i < 10:
@@ -157,6 +159,7 @@ class VRedditDL(commands.Cog):
     
     @commands.command()
     async def tenor(self, ctx):
+        """Search 3 previous messages for tenor links, and link them without embedding the gif"""
         urls = []
         async for message in ctx.channel.history(limit=4):
             if message.content.find("tenor.com") >= 0:
@@ -170,6 +173,7 @@ class VRedditDL(commands.Cog):
         
     @commands.command()
     async def redditlink(self, ctx, url):
+        """Grab i.reddit links from a reddit comment page. Also will check for videos if images not found"""
         async with ctx.typing():
             if url[0] == '<':
                 url = url[1:len(url)-1]
