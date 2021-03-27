@@ -177,8 +177,21 @@ class ToDoList(commands.Cog):
         if (await self.check_exists(author.id, list_name)):
             async with self.config.lists() as listss:
                 for item in item_split:
-                    listss[str(author.id)][list_name][item] = False
+                    listss[str(author.id)][list_name][item.strip()] = False
             await ctx.message.add_reaction(self.CHECK_MARK)
         else:
             await ctx.send(f'List {list_name} doesn\'t exist!')
 
+    @todolist.command(aliases=["removelist"])
+    async def deletelist(self, ctx, list_name):
+        """Deletes  a list. removelist also works."""
+        author = ctx.message.author
+        async with self.config.lists() as listss:
+            if self.check_exists(author.id, list_name):
+                try:
+                    del(listss[str(author.id)][list_name])
+                    await ctx.message.add_reaction(self.CHECK_MARK)
+                except:
+                    await ctx.send("Error. Check that you spelled the list correctly.")
+            else:
+                await ctx.send(f'Error. Does that list exist?')
