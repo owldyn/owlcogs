@@ -117,7 +117,7 @@ class ToDoList(commands.Cog):
         """Checks off an item in a list"""
         author = ctx.message.author
         async with self.config.lists() as listss:
-            if self.check_exists(author.id, list_name):
+            if (await self.check_exists(author.id, list_name)):
                 try:
                     tmp = listss[str(author.id)][list_name][item_name]
                     listss[str(author.id)][list_name][item_name] = True
@@ -136,7 +136,7 @@ class ToDoList(commands.Cog):
         """Unchecks an item in a list"""
         author = ctx.message.author
         async with self.config.lists() as listss:
-            if self.check_exists(author.id, list_name):
+            if (await self.check_exists(author.id, list_name)):
                 try:
                     tmp = listss[str(author.id)][list_name][item_name]
                     listss[str(author.id)][list_name][item_name] = False
@@ -155,7 +155,7 @@ class ToDoList(commands.Cog):
         """Deletes an item from a list. Removeitem also works."""
         author = ctx.message.author
         async with self.config.lists() as listss:
-            if self.check_exists(author.id, list_name):
+            if (await self.check_exists(author.id, list_name)):
                 try:
                     tmp = listss[str(author.id)][list_name][item_name]
                     del(listss[str(author.id)][list_name][item_name])
@@ -187,7 +187,7 @@ class ToDoList(commands.Cog):
         """Deletes  a list. removelist also works."""
         author = ctx.message.author
         async with self.config.lists() as listss:
-            if self.check_exists(author.id, list_name):
+            if (await self.check_exists(author.id, list_name)):
                 try:
                     del(listss[str(author.id)][list_name])
                     await ctx.message.add_reaction(self.CHECK_MARK)
