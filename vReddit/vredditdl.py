@@ -183,15 +183,20 @@ class VRedditDL(commands.Cog):
             req = Request(url,headers={'User-Agent': 'Mozilla/5.0'})
             webpage = urlopen(req).read().decode('utf8')
             soup = BeautifulSoup(webpage, 'html.parser')
-            regexlink = re.search('http.?://i.redd.it/[a-zA-Z0-9]*.[pjg][npi][gf]', str(webpage))
-            try:
-                imglink = regexlink.group(0)
-            except:
+            regexlink = []
+            regexlink.append(re.search('http.?://i.redd.it/[a-zA-Z0-9]*.[pjg][npi][gf]', str(webpage)))
+            regexlink.append(re.search('http.?://preview.redd.it/[a-zA-Z0-9]*.[pjg][npi][gf]', str(webpage)))
+            regexlink.append(re.search('http.?://[i]?.?imgur.com/[a-zA-Z0-9]*.[pjg][npi][gf]', str(webpage)))
+            imglink = "none"
+            for search in regexlink:
                 try:
-                    regexlink = re.search('http.?://[i]?.?imgur.com/[a-zA-Z0-9]*.[pjg][npi][gf]', str(webpage))
-                    imglink = regexlink.group(0)
+                    imglink = search.group(0)
+                    break
                 except:
-                    imglink = "none"
+                    pass
+            if "preview.redd.it" in imglink:
+                imglink = imglink.replace("preview.redd", "i.redd")
+
             if imglink == "none":
                 await self.vredditlink(ctx=ctx, url=url)
             else:
