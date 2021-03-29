@@ -193,8 +193,7 @@ class VRedditDL(commands.Cog):
                 except:
                     imglink = "none"
             if imglink == "none":
-                #await self.vredditlink(ctx=ctx, url=url)
-                ctx.send("no image found")
+                await self.vredditlink(ctx=ctx, url=url)
             else:
                 #titleraw = subprocess.run(['youtube-dl', '--get-title', url], capture_output=True)
                 #title = titleraw.stdout.decode("utf-8")[0:len(titleraw.stdout)-1]
