@@ -7,6 +7,7 @@ import io
 import discord
 import re
 from urllib.request import Request, urlopen
+from bs4 import BeautifulSoup
 
 class VRedditDL(commands.Cog):
     """v.redd.it downloader"""
@@ -173,25 +174,32 @@ class VRedditDL(commands.Cog):
         
     @commands.command()
     async def redditlink(self, ctx, url):
-        """Grab i.reddit links from a reddit comment page. Also will check for videos if images not found"""
+        """Grab i.imgur or i.reddit links from a reddit comment page. Also will check for videos if images not found"""
         async with ctx.typing():
             if url[0] == '<':
                 url = url[1:len(url)-1]
             else: 
                 await ctx.message.edit(suppress=True)
             req = Request(url,headers={'User-Agent': 'Mozilla/5.0'})
-            webpage = urlopen(req).read()
-            regexlink = re.search('http.?://i.redd.it/[a-zA-Z0-9]*.[pjg][npi][gf]', str(webpage))
+            webpage = urlopen(req).read().decode('utf8')
+            soup = BeautifulSoup(webpage, 'html.parser')
+            regexlink = re.search('http.?://i.redd.it/[a-zA-Z0-9]*.[pjg][npi][gf]', str(soup.get_text()))
             try:
                 imglink = regexlink.group(0)
             except:
-                imglink = "none"
+                try:
+                    regexlink = re.search('http.?://[i]?.?imgur.com/[a-zA-Z0-9]*.[pjg][npi][gf]', str(webpage))
+                    imglink = regexlink.group(0)
+                except:
+                    imglink = "none"
             if imglink == "none":
                 await self.vredditlink(ctx=ctx, url=url)
             else:
-                titleraw = subprocess.run(['youtube-dl', '--get-title', url], capture_output=True)
-                title = titleraw.stdout.decode("utf-8")[0:len(titleraw.stdout)-1]
-                e = discord.Embed(title=title)
+                #titleraw = subprocess.run(['youtube-dl', '--get-title', url], capture_output=True)
+                #title = titleraw.stdout.decode("utf-8")[0:len(titleraw.stdout)-1]
+                titleraw = soup.find('title')
+                title = titleraw.string.split(' : ')
+                e = discord.Embed(title=title[0])
                 e.set_image(url=imglink)
                 await ctx.send(embed=e)
                 await ctx.message.edit(suppress=True)
