@@ -184,8 +184,8 @@ class VRedditDL(commands.Cog):
             webpage = urlopen(req).read().decode('utf8')
             soup = BeautifulSoup(webpage, 'html.parser')
             regexlink = []
-            regexlink.append(re.search('http.?://i.redd.it/[a-zA-Z0-9]*.[pjg][npi][gf]', str(webpage)))
             regexlink.append(re.search('http.?://preview.redd.it/[a-zA-Z0-9]*.[pjg][npi][gf]', str(webpage)))
+            regexlink.append(re.search('http.?://i.redd.it/[a-zA-Z0-9]*.[pjg][npi][gf]', str(webpage)))
             regexlink.append(re.search('http.?://[i]?.?imgur.com/[a-zA-Z0-9]*.[pjg][npi][gf]', str(webpage)))
             imglink = "none"
             for search in regexlink:
