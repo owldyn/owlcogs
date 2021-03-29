@@ -183,7 +183,7 @@ class VRedditDL(commands.Cog):
             req = Request(url,headers={'User-Agent': 'Mozilla/5.0'})
             webpage = urlopen(req).read().decode('utf8')
             soup = BeautifulSoup(webpage, 'html.parser')
-            regexlink = re.search('http.?://i.redd.it/[a-zA-Z0-9]*.[pjg][npi][gf]', str(soup.get_text()))
+            regexlink = re.search('http.?://i.redd.it/[a-zA-Z0-9]*.[pjg][npi][gf]', str(webpage))
             try:
                 imglink = regexlink.group(0)
             except:
@@ -193,7 +193,8 @@ class VRedditDL(commands.Cog):
                 except:
                     imglink = "none"
             if imglink == "none":
-                await self.vredditlink(ctx=ctx, url=url)
+                #await self.vredditlink(ctx=ctx, url=url)
+                ctx.send("no image found")
             else:
                 #titleraw = subprocess.run(['youtube-dl', '--get-title', url], capture_output=True)
                 #title = titleraw.stdout.decode("utf-8")[0:len(titleraw.stdout)-1]
