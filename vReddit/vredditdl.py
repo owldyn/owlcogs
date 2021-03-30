@@ -186,7 +186,7 @@ class VRedditDL(commands.Cog):
             regexlink = []
             regexlink.append(re.search('http.?://preview.redd.it/[a-zA-Z0-9]*.[pjg][npi][gf]', str(webpage)))
             regexlink.append(re.search('http.?://i.redd.it/[a-zA-Z0-9]*.[pjg][npi][gf]', str(webpage)))
-            regexlink.append(re.search('http.?://[i]?.?imgur.com/[a-zA-Z0-9]*.[pjg][npi][gf]', str(webpage)))
+            regexlink.append(re.search('http.?://[i]?.?imgur.com/[a-zA-Z0-9]*.[pjg][npi][gf][v]?', str(webpage)))
             imglink = "none"
             for search in regexlink:
                 try:
