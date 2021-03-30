@@ -34,14 +34,6 @@ class ToDoList(commands.Cog):
     async def todolist(self, ctx):
         """General list command."""
 
-    async def check_exists(self, authid, list_name):
-        async with self.config.lists() as listss:
-            try:
-                tmp = listss[str(authid)][str(list_name)]
-                return True
-            except:
-                return False
-
     @todolist.command(aliases=["createlist"])
     async def create(self, ctx, list_name: str):
         """Creates a list. List name must be one word."""
