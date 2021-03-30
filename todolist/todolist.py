@@ -79,7 +79,7 @@ class ToDoList(commands.Cog):
     async def additem(self, ctx, list_name: str, *, item_name: str):
         """Adds an item to a list"""
         author = ctx.message.author
-        if (await self.check_exists(author.id, list_name)):
+        if (str(list_name) in listss[str(author.id)]):
             async with self.config.lists() as listss:
                 listss[str(author.id)][list_name][item_name] = False
             #await ctx.send(f'Created item {item_name} in list {list_name}.')
@@ -117,7 +117,7 @@ class ToDoList(commands.Cog):
         """Checks off an item in a list"""
         author = ctx.message.author
         async with self.config.lists() as listss:
-            if (await self.check_exists(author.id, list_name)):
+            if (str(list_name) in listss[str(author.id)]):
                 try:
                     tmp = listss[str(author.id)][list_name][item_name]
                     listss[str(author.id)][list_name][item_name] = True
@@ -136,7 +136,7 @@ class ToDoList(commands.Cog):
         """Unchecks an item in a list"""
         author = ctx.message.author
         async with self.config.lists() as listss:
-            if (await self.check_exists(author.id, list_name)):
+            if (str(list_name) in listss[str(author.id)]):
                 try:
                     tmp = listss[str(author.id)][list_name][item_name]
                     listss[str(author.id)][list_name][item_name] = False
@@ -155,7 +155,7 @@ class ToDoList(commands.Cog):
         """Deletes an item from a list. Removeitem also works."""
         author = ctx.message.author
         async with self.config.lists() as listss:
-            if (await self.check_exists(author.id, list_name)):
+            if (str(list_name) in listss[str(author.id)]):
                 try:
                     tmp = listss[str(author.id)][list_name][item_name]
                     del(listss[str(author.id)][list_name][item_name])
@@ -174,7 +174,7 @@ class ToDoList(commands.Cog):
         """Adds many items to a list. Use | between items, 'item1 | item2'"""
         item_split = item_name.split('|')
         author = ctx.message.author
-        if (await self.check_exists(author.id, list_name)):
+        if (str(list_name) in listss[str(author.id)]):
             async with self.config.lists() as listss:
                 for item in item_split:
                     listss[str(author.id)][list_name][item.strip()] = False
@@ -187,7 +187,7 @@ class ToDoList(commands.Cog):
         """Deletes  a list. removelist also works."""
         author = ctx.message.author
         async with self.config.lists() as listss:
-            if (await self.check_exists(author.id, list_name)):
+            if (str(list_name) in listss[str(author.id)]):
                 try:
                     del(listss[str(author.id)][list_name])
                     await ctx.message.add_reaction(self.CHECK_MARK)
