@@ -184,6 +184,7 @@ class VRedditDL(commands.Cog):
             webpage = urlopen(req).read().decode('utf8')
             soup = BeautifulSoup(webpage, 'html.parser')
             regexlink = []
+            regexlink.append(re.search('http.?://v.redd.it/[a-zA-Z0-9]*', str(webpage)))
             regexlink.append(re.search('http.?://preview.redd.it/[a-zA-Z0-9]*.[pjg][npi][gf]', str(webpage)))
             regexlink.append(re.search('http.?://i.redd.it/[a-zA-Z0-9]*.[pjg][npi][gf]', str(webpage)))
             regexlink.append(re.search('http.?://[i]?.?imgur.com/[a-zA-Z0-9]*.[pjg][npi][gf][v]?', str(webpage)))
@@ -197,7 +198,7 @@ class VRedditDL(commands.Cog):
             if "preview.redd.it" in imglink:
                 imglink = imglink.replace("preview.redd", "i.redd")
 
-            if imglink == "none":
+            if "v.redd.it" in imglink:
                 await self.vredditlink(ctx=ctx, url=url)
             else:
                 #titleraw = subprocess.run(['youtube-dl', '--get-title', url], capture_output=True)
