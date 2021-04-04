@@ -65,7 +65,7 @@ class VRedditDL(commands.Cog):
                 await ctx.send("{} is not a valid v.redd.it link.".format(url))
         
     @commands.command()
-    async def vredditlink(self, ctx, url):
+    async def vredditlink(self, ctx, url, audio="yes"):
         """Downloads the vreddit video and shrinks it then attempts to upload again if too large"""
         async with ctx.typing():
             if url[0] == '<':
@@ -76,9 +76,14 @@ class VRedditDL(commands.Cog):
             fname = '/tmp/{}.mp4'.format(ctx.message.id)
             fname2 = '/tmp/{}2.mp4'.format(ctx.message.id)
             fname3 = '/tmp/{}3.mp4'.format(ctx.message.id)
-
-            if url.find("v.redd.it") >= 0:
+            if audio == "yes":
                 subprocess.run(['youtube-dl', url, '-o', fname])
+            else:
+                tmpfname = '/tmp/tmp.mp4'.format(ctx.message.id)
+                subprocess.run(['youtube-dl', '-f', 'bestvideo', url, '-o', tmpfname])
+                subprocess.run(['ffmpeg', '-i', tmpfname, '-f', 'lavfi', '-i', 'anullsrc=channel_layout=stereo:sample_rate=44100', '-c:v', 'copy', '-c:a', 'aac', '-map', '0:v', '-map', '1:a', '-shortest', fname]) 
+            
+            if url.find("v.redd.it") >= 0:
                 fs = os.stat(fname).st_size
                 if fs < 8388119:
                     stream=io.open(fname, "rb")
@@ -109,7 +114,6 @@ class VRedditDL(commands.Cog):
                         os.remove(fname2)
                         os.remove(fname3)
             elif url.find("reddit.com") >= 0:
-                subprocess.run(['youtube-dl', url, '-o', fname])
                 titleraw = subprocess.run(['youtube-dl', '--get-title', url], capture_output=True)
                 title = titleraw.stdout.decode("utf-8")[0:len(titleraw.stdout)-1]
 
