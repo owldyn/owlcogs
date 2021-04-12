@@ -82,6 +82,7 @@ class VRedditDL(commands.Cog):
                 tmpfname = '/tmp/tmp.mp4'.format(ctx.message.id)
                 subprocess.run(['youtube-dl', '-f', 'bestvideo', url, '-o', tmpfname])
                 subprocess.run(['ffmpeg', '-i', tmpfname, '-f', 'lavfi', '-i', 'anullsrc=channel_layout=stereo:sample_rate=44100', '-c:v', 'copy', '-c:a', 'aac', '-map', '0:v', '-map', '1:a', '-shortest', fname]) 
+                os.remove(tmpfname)
             
             if url.find("v.redd.it") >= 0:
                 fs = os.stat(fname).st_size
