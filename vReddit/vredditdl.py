@@ -72,14 +72,21 @@ class VRedditDL(commands.Cog):
                 url = url[1:len(url)-1]
             else: 
                 await ctx.message.edit(suppress=True)
-
+            
+            tmpfname = f'/tmp/tmp{ctx.message.id}.mp4'
             fname = '/tmp/{}.mp4'.format(ctx.message.id)
             fname2 = '/tmp/{}2.mp4'.format(ctx.message.id)
             fname3 = '/tmp/{}3.mp4'.format(ctx.message.id)
+
             if audio == "yes":
                 subprocess.run(['youtube-dl', url, '-o', fname])
-            else:
-                tmpfname = '/tmp/tmp.mp4'.format(ctx.message.id)
+                audiocheckraw = subprocess.run(['ffmpeg', '-hide_banner', '-i', fname, '-af', 'volumedetect', '-vn', '-f', 'null', '-', '2>&1'], capture_output=True)
+                audiocheck = audiocheckraw.stderr.decode("utf-8")[0:len(audiocheckraw.stderr)-1]
+                if "does not contain any stream" in audiocheck and "mean_volume:" not in audiocheck:
+                    os.rename(fname, tmpfname)
+                    subprocess.run(['ffmpeg', '-i', tmpfname, '-f', 'lavfi', '-i', 'anullsrc=channel_layout=stereo:sample_rate=44100', '-c:v', 'copy', '-c:a', 'aac', '-map', '0:v', '-map', '1:a', '-shortest', fname]) 
+                    os.remove(tmpfname)
+            else:                
                 subprocess.run(['youtube-dl', '-f', 'bestvideo', url, '-o', tmpfname])
                 subprocess.run(['ffmpeg', '-i', tmpfname, '-f', 'lavfi', '-i', 'anullsrc=channel_layout=stereo:sample_rate=44100', '-c:v', 'copy', '-c:a', 'aac', '-map', '0:v', '-map', '1:a', '-shortest', fname]) 
                 os.remove(tmpfname)
