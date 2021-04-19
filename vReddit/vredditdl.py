@@ -159,15 +159,67 @@ class VRedditDL(commands.Cog):
             await ctx.message.edit(suppress=True)
                 
 
-    @commands.command()
-    async def Hoot(self, ctx):
-        """Sends 10 hoots"""
-        test: discord.Message = await ctx.send("Hoot!")
-        i = 0
-        while i < 10:
-            await test.edit(content="{} Hoot!".format(test.content))
-            i = i + 1
-            await asyncio.sleep(1)
+    async def gfylink(self, ctx, url, redditlink, audio="yes", ):
+        """Downloads and uploads a gfycat video"""
+        async with ctx.typing():
+            if url[0] == '<':
+                url = url[1:len(url)-1]
+            else: 
+                await ctx.message.edit(suppress=True)
+            
+            tmpfname = f'/tmp/tmp{ctx.message.id}.mp4'
+            fname = '/tmp/{}.mp4'.format(ctx.message.id)
+            fname2 = '/tmp/{}2.mp4'.format(ctx.message.id)
+            fname3 = '/tmp/{}3.mp4'.format(ctx.message.id)
+
+            if audio == "yes":
+                subprocess.run(['youtube-dl', url, '-o', fname])
+                audiocheckraw = subprocess.run(['ffmpeg', '-hide_banner', '-i', fname, '-af', 'volumedetect', '-vn', '-f', 'null', '-', '2>&1'], capture_output=True)
+                audiocheck = audiocheckraw.stderr.decode("utf-8")[0:len(audiocheckraw.stderr)-1]
+                if "does not contain any stream" in audiocheck and "mean_volume:" not in audiocheck:
+                    os.rename(fname, tmpfname)
+                    subprocess.run(['ffmpeg', '-i', tmpfname, '-f', 'lavfi', '-i', 'anullsrc=channel_layout=stereo:sample_rate=44100', '-c:v', 'copy', '-c:a', 'aac', '-map', '0:v', '-map', '1:a', '-shortest', fname]) 
+                    os.remove(tmpfname)
+            else:                
+                subprocess.run(['youtube-dl', '-f', 'bestvideo', url, '-o', tmpfname])
+                subprocess.run(['ffmpeg', '-i', tmpfname, '-f', 'lavfi', '-i', 'anullsrc=channel_layout=stereo:sample_rate=44100', '-c:v', 'copy', '-c:a', 'aac', '-map', '0:v', '-map', '1:a', '-shortest', fname]) 
+                os.remove(tmpfname)
+            
+            if url.find("gfycat.com") >= 0:
+                titleraw = subprocess.run(['youtube-dl', '--get-title', redditlink], capture_output=True)
+                title = titleraw.stdout.decode("utf-8")[0:len(titleraw.stdout)-1]
+
+                fs = os.stat(fname).st_size
+                if fs < 8388119:
+                    stream=io.open(fname, "rb")
+                    await ctx.send(content="Title: {}".format(title), file=discord.File(stream, filename="{}.mp4".format(title)))
+                    os.remove(fname)
+                else:
+                    shrink: discord.Message = await ctx.send("File is more than 8mb... attempting to shrink.")
+                    subprocess.run(['ffmpeg', '-i', fname, '-crf', '24', '-vf', 'scale=ceil(iw/4)*2:ceil(ih/4)*2,fps=24', '-c:a', 'copy', fname2])                   
+                    fs2 = os.stat(fname2).st_size
+                    if fs2 < 8388119:
+                        stream=io.open(fname2, "rb")
+                        await ctx.send(content="Title: {}".format(title), file=discord.File(stream, filename="{}.mp4".format(title)))
+                        os.remove(fname)
+                        os.remove(fname2)
+                        await shrink.delete()
+                    else:
+                        await shrink.edit(content="File is still bigger than 8mb.. attempting maximum shrinkage (may take a while).")
+                        subprocess.run(['ffmpeg', '-i', fname2, '-preset', 'veryslow', '-crf', '32', '-b:a', '96k', fname3])
+                        fs3 = os.stat(fname3).st_size
+                        if fs3 < 8388119:
+                            stream=io.open(fname3, "rb")
+                            await ctx.send(content="Title: {}".format(title), file=discord.File(stream, filename="{}.mp4".format(title)))
+                            await shrink.delete()
+                        else:
+                            await shrink.delete()
+                            await ctx.send("File too large, could not reduce below 8MB.")
+                        os.remove(fname)
+                        os.remove(fname2)
+                        os.remove(fname3)
+            else:
+                await ctx.send("{} is not a valid gfycat link.".format(url))
     
     
     @commands.command()
@@ -192,6 +244,11 @@ class VRedditDL(commands.Cog):
                 url = url[1:len(url)-1]
             else: 
                 await ctx.message.edit(suppress=True)
+            if "www.reddit.com" in url:
+                url = url.replace("www.reddit", "old.reddit")
+            elif "reddit" not in url:
+                await ctx.send("Not a valid reddit link")
+                return
             req = Request(url,headers={'User-Agent': 'Mozilla/5.0'})
             webpage = urlopen(req).read().decode('utf8')
             soup = BeautifulSoup(webpage, 'html.parser')
@@ -199,7 +256,8 @@ class VRedditDL(commands.Cog):
             regexlink.append(re.search('http.?://v.redd.it/[a-zA-Z0-9]*', str(webpage)))
             regexlink.append(re.search('http.?://preview.redd.it/[a-zA-Z0-9]*.[pjg][npi][gf]', str(webpage)))
             regexlink.append(re.search('http.?://i.redd.it/[a-zA-Z0-9]*.[pjg][npi][gf]', str(webpage)))
-            regexlink.append(re.search('http.?://[i]?.?imgur.com/[a-zA-Z0-9]*.[pjg][npi][gf][v]?', str(webpage)))
+            regexlink.append(re.search('http.?://[i]?.?imgur.com/[a-zA-Z0-9]*.[pjg][npi][gf][v]?', str(webpage)))   
+            regexlink.append(re.search('http.?://gfycat.com/[a-zA-Z0-9]*', str(webpage)))         
             imglink = "none"
             for search in regexlink:
                 try:
@@ -212,6 +270,8 @@ class VRedditDL(commands.Cog):
 
             if "v.redd.it" in imglink:
                 await self.vredditlink(ctx=ctx, url=url)
+            elif "gfycat" in imglink:
+                await self.gfylink(ctx=ctx, url=imglink, redditlink=url)
             else:
                 #titleraw = subprocess.run(['youtube-dl', '--get-title', url], capture_output=True)
                 #title = titleraw.stdout.decode("utf-8")[0:len(titleraw.stdout)-1]
