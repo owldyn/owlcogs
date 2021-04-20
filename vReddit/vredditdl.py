@@ -71,7 +71,10 @@ class VRedditDL(commands.Cog):
             if url[0] == '<':
                 url = url[1:len(url)-1]
             else: 
-                await ctx.message.edit(suppress=True)
+                try:
+                    await ctx.message.edit(suppress=True)
+                except:
+                    pass
             
             tmpfname = f'/tmp/tmp{ctx.message.id}.mp4'
             fname = '/tmp/{}.mp4'.format(ctx.message.id)
@@ -156,7 +159,10 @@ class VRedditDL(commands.Cog):
                         os.remove(fname3)
             else:
                 await ctx.send("{} is not a valid reddit link.".format(url))
-            await ctx.message.edit(suppress=True)
+                try:
+                    await ctx.message.edit(suppress=True)
+                except:
+                    pass
                 
 
     async def gfylink(self, ctx, url, redditlink, audio="yes", ):
@@ -165,7 +171,10 @@ class VRedditDL(commands.Cog):
             if url[0] == '<':
                 url = url[1:len(url)-1]
             else: 
-                await ctx.message.edit(suppress=True)
+                try:
+                    await ctx.message.edit(suppress=True)
+                except:
+                    pass
             
             tmpfname = f'/tmp/tmp{ctx.message.id}.mp4'
             fname = '/tmp/{}.mp4'.format(ctx.message.id)
@@ -243,7 +252,10 @@ class VRedditDL(commands.Cog):
             if url[0] == '<':
                 url = url[1:len(url)-1]
             else: 
-                await ctx.message.edit(suppress=True)
+                try:
+                    await ctx.message.edit(suppress=True)
+                except:
+                    pass
             if "www.reddit.com" in url:
                 url = url.replace("www.reddit", "old.reddit")
             elif "reddit" not in url:
@@ -280,7 +292,10 @@ class VRedditDL(commands.Cog):
                 e = discord.Embed(title=title[0])
                 e.set_image(url=imglink)
                 await ctx.send(embed=e)
-                await ctx.message.edit(suppress=True)
+                try:
+                    await ctx.message.edit(suppress=True)
+                except:
+                    pass
 
 
 
