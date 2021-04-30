@@ -262,7 +262,8 @@ class VRedditDL(commands.Cog):
                 await ctx.send("Not a valid reddit link")
                 return
             req = Request(url,headers={'User-Agent': 'Mozilla/5.0'})
-            webpage = urlopen(req).read().decode('utf8')
+            webpageall = urlopen(req).read().decode('utf8')
+            webpage = webpageall.partition('\n')[0]
             soup = BeautifulSoup(webpage, 'html.parser')
             regexlink = []
             regexlink.append(re.search('http.?://v.redd.it/[a-zA-Z0-9]*', str(webpage)))
