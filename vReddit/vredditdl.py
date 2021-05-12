@@ -34,7 +34,7 @@ class VRedditDL(commands.Cog):
             if url.find("v.redd.it") >= 0:
                 subprocess.run(['youtube-dl', url, '-o', fname])
                 #fs = os.stat(fname).st_size
-                fs = self.file_size(fname)
+                fs = await self.file_size(fname)
                 if fs < 8388119:
                     stream=io.open(fname, "rb")
                     await ctx.send(content="", file=discord.File(stream, filename=f"vid.mp4"))
@@ -51,7 +51,7 @@ class VRedditDL(commands.Cog):
                 title = titleraw.stdout.decode("utf-8")[0:len(titleraw.stdout)-1]
                 
                 #fs = os.stat(fname).st_size
-                fs = self.file_size(fname)
+                fs = await self.file_size(fname)
                 if fs < 8388119:
                     stream=io.open(fname, "rb")
                     await ctx.send(content="Title: {}".format(title), file=discord.File(stream, filename="{}.mp4".format(title)))
