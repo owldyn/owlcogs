@@ -112,7 +112,7 @@ class VRedditDL(commands.Cog):
                         await shrink.delete()
                     else:
                         await shrink.edit(content="File is still bigger than 8mb.. attempting extra shrinkage.")
-                        subprocess.run(['ffmpeg', '-i', '-preset', 'veryfast', fname2, '-crf', '28', '-c:a', 'copy', fname3])
+                        subprocess.run(['ffmpeg', '-i', fname2, '-preset', 'veryfast', '-crf', '28', '-c:a', 'copy', fname3])
                         fs3 = os.stat(fname3).st_size
                         if fs3 < 8388119:
                             stream=io.open(fname3, "rb")
@@ -145,7 +145,7 @@ class VRedditDL(commands.Cog):
                         await shrink.delete()
                     else:
                         await shrink.edit(content="File is still bigger than 8mb.. attempting extra shrinkage.")
-                        subprocess.run(['ffmpeg', '-i', '-preset', 'veryfast', fname2, '-crf', '28', '-c:a', 'copy', fname3])
+                        subprocess.run(['ffmpeg', '-i', fname2, '-preset', 'veryfast', '-crf', '28', '-c:a', 'copy', fname3])
                         fs3 = os.stat(fname3).st_size
                         if fs3 < 8388119:
                             stream=io.open(fname3, "rb")
