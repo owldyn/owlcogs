@@ -112,7 +112,7 @@ class VRedditDL(commands.Cog):
                         await shrink.delete()
                     else:
                         await shrink.edit(content="File is still bigger than 8mb.. attempting extra shrinkage.")
-                        subprocess.run(['ffmpeg', '-i', '-preset', 'veryfast' fname2, '-crf', '28', '-c:a', 'copy', fname3])
+                        subprocess.run(['ffmpeg', '-i', '-preset', 'veryfast', fname2, '-crf', '28', '-c:a', 'copy', fname3])
                         fs3 = os.stat(fname3).st_size
                         if fs3 < 8388119:
                             stream=io.open(fname3, "rb")
@@ -145,7 +145,7 @@ class VRedditDL(commands.Cog):
                         await shrink.delete()
                     else:
                         await shrink.edit(content="File is still bigger than 8mb.. attempting extra shrinkage.")
-                        subprocess.run(['ffmpeg', '-i', '-preset', 'veryfast' fname2, '-crf', '28', '-c:a', 'copy', fname3])
+                        subprocess.run(['ffmpeg', '-i', '-preset', 'veryfast', fname2, '-crf', '28', '-c:a', 'copy', fname3])
                         fs3 = os.stat(fname3).st_size
                         if fs3 < 8388119:
                             stream=io.open(fname3, "rb")
@@ -264,7 +264,6 @@ class VRedditDL(commands.Cog):
             req = Request(url,headers={'User-Agent': 'Mozilla/5.0'})
             webpageall = urlopen(req).read().decode('utf8')
             webpage = webpageall.partition('\n')[0]
-            soup = BeautifulSoup(webpage, 'html.parser')
             regexlink = []
             regexlink.append(re.search('http.?://v.redd.it/[a-zA-Z0-9]*', str(webpage)))
             regexlink.append(re.search('http.?://preview.redd.it/[a-zA-Z0-9]*.[pjg][npi][gf]', str(webpage)))
@@ -288,6 +287,7 @@ class VRedditDL(commands.Cog):
             else:
                 #titleraw = subprocess.run(['youtube-dl', '--get-title', url], capture_output=True)
                 #title = titleraw.stdout.decode("utf-8")[0:len(titleraw.stdout)-1]
+                soup = BeautifulSoup(webpage, 'html.parser')
                 titleraw = soup.find('title')
                 title = titleraw.string.split(' : ')
                 e = discord.Embed(title=title[0])
