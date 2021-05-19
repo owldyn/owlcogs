@@ -22,6 +22,23 @@ class VRedditDL(commands.Cog):
         statinfo = os.stat(fname)
         return statinfo.st_size
 
+    async def check_audio(self, audio, fname, tmpfname, url):
+        if audio == "yes":
+            subprocess.run(['youtube-dl', url, '-o', fname])
+            audiocheckraw = subprocess.run(['ffmpeg', '-hide_banner', '-i', fname, '-af', 'volumedetect', '-vn', '-f', 'null', '-', '2>&1'], capture_output=True)
+            audiocheck = audiocheckraw.stderr.decode("utf-8")[0:len(audiocheckraw.stderr)-1]
+            if "does not contain any stream" in audiocheck and "mean_volume:" not in audiocheck:
+                os.rename(fname, tmpfname)
+                subprocess.run(['ffmpeg', '-i', tmpfname, '-f', 'lavfi', '-i', 'anullsrc=channel_layout=stereo:sample_rate=44100', '-c:v', 'copy', '-c:a', 'aac', '-map', '0:v', '-map', '1:a', '-shortest', fname]) 
+                os.remove(tmpfname)
+        else:                
+            subprocess.run(['youtube-dl', '-f', 'bestvideo', url, '-o', tmpfname])
+            subprocess.run(['ffmpeg', '-i', tmpfname, '-f', 'lavfi', '-i', 'anullsrc=channel_layout=stereo:sample_rate=44100', '-c:v', 'copy', '-c:a', 'aac', '-map', '0:v', '-map', '1:a', '-shortest', fname]) 
+            os.remove(tmpfname)
+
+    async def download_and_send(self, ctx, fname,):
+        pass
+
     @commands.command()
     async def vredditdl(self, ctx, url):
         """Downloads the vreddit video and links it to webserver if too large"""
@@ -81,18 +98,19 @@ class VRedditDL(commands.Cog):
             fname2 = '/tmp/{}2.mp4'.format(ctx.message.id)
             fname3 = '/tmp/{}3.mp4'.format(ctx.message.id)
 
-            if audio == "yes":
-                subprocess.run(['youtube-dl', url, '-o', fname])
-                audiocheckraw = subprocess.run(['ffmpeg', '-hide_banner', '-i', fname, '-af', 'volumedetect', '-vn', '-f', 'null', '-', '2>&1'], capture_output=True)
-                audiocheck = audiocheckraw.stderr.decode("utf-8")[0:len(audiocheckraw.stderr)-1]
-                if "does not contain any stream" in audiocheck and "mean_volume:" not in audiocheck:
-                    os.rename(fname, tmpfname)
-                    subprocess.run(['ffmpeg', '-i', tmpfname, '-f', 'lavfi', '-i', 'anullsrc=channel_layout=stereo:sample_rate=44100', '-c:v', 'copy', '-c:a', 'aac', '-map', '0:v', '-map', '1:a', '-shortest', fname]) 
-                    os.remove(tmpfname)
-            else:                
-                subprocess.run(['youtube-dl', '-f', 'bestvideo', url, '-o', tmpfname])
-                subprocess.run(['ffmpeg', '-i', tmpfname, '-f', 'lavfi', '-i', 'anullsrc=channel_layout=stereo:sample_rate=44100', '-c:v', 'copy', '-c:a', 'aac', '-map', '0:v', '-map', '1:a', '-shortest', fname]) 
-                os.remove(tmpfname)
+            await self.check_audio(audio, fname, tmpfname, url)
+            #if audio == "yes":
+            #    subprocess.run(['youtube-dl', url, '-o', fname])
+            #    audiocheckraw = subprocess.run(['ffmpeg', '-hide_banner', '-i', fname, '-af', 'volumedetect', '-vn', '-f', 'null', '-', '2>&1'], capture_output=True)
+            #    audiocheck = audiocheckraw.stderr.decode("utf-8")[0:len(audiocheckraw.stderr)-1]
+            #    if "does not contain any stream" in audiocheck and "mean_volume:" not in audiocheck:
+            #        os.rename(fname, tmpfname)
+            #        subprocess.run(['ffmpeg', '-i', tmpfname, '-f', 'lavfi', '-i', 'anullsrc=channel_layout=stereo:sample_rate=44100', '-c:v', 'copy', '-c:a', 'aac', '-map', '0:v', '-map', '1:a', '-shortest', fname]) 
+            #        os.remove(tmpfname)
+            #else:                
+            #    subprocess.run(['youtube-dl', '-f', 'bestvideo', url, '-o', tmpfname])
+            #    subprocess.run(['ffmpeg', '-i', tmpfname, '-f', 'lavfi', '-i', 'anullsrc=channel_layout=stereo:sample_rate=44100', '-c:v', 'copy', '-c:a', 'aac', '-map', '0:v', '-map', '1:a', '-shortest', fname]) 
+            #    os.remove(tmpfname)
             
             if url.find("v.redd.it") >= 0:
                 fs = os.stat(fname).st_size
@@ -165,7 +183,7 @@ class VRedditDL(commands.Cog):
                     pass
                 
 
-    async def gfylink(self, ctx, url, redditlink, audio="yes", ):
+    async def gfylink(self, ctx, url, redditlink, audio="yes"):
         """Downloads and uploads a gfycat video"""
         async with ctx.typing():
             if url[0] == '<':
@@ -246,7 +264,7 @@ class VRedditDL(commands.Cog):
                 await ctx.send("<{}>".format(url))
         
     @commands.command()
-    async def redditlink(self, ctx, url):
+    async def redditlink(self, ctx, url, audio = "yes"):
         """Grab i.imgur or i.reddit links from a reddit comment page. Also will check for videos if images not found"""
         async with ctx.typing():
             if url[0] == '<':
@@ -281,9 +299,9 @@ class VRedditDL(commands.Cog):
                 imglink = imglink.replace("preview.redd", "i.redd")
 
             if "v.redd.it" in imglink:
-                await self.vredditlink(ctx=ctx, url=url)
+                await self.vredditlink(ctx=ctx, url=url, audio=audio)
             elif "gfycat" in imglink:
-                await self.gfylink(ctx=ctx, url=imglink, redditlink=url)
+                await self.gfylink(ctx=ctx, url=imglink, redditlink=url, audio=audio)
             else:
                 #titleraw = subprocess.run(['youtube-dl', '--get-title', url], capture_output=True)
                 #title = titleraw.stdout.decode("utf-8")[0:len(titleraw.stdout)-1]
