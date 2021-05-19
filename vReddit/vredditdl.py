@@ -36,8 +36,44 @@ class VRedditDL(commands.Cog):
             subprocess.run(['ffmpeg', '-i', tmpfname, '-f', 'lavfi', '-i', 'anullsrc=channel_layout=stereo:sample_rate=44100', '-c:v', 'copy', '-c:a', 'aac', '-map', '0:v', '-map', '1:a', '-shortest', fname]) 
             os.remove(tmpfname)
 
-    async def download_and_send(self, ctx, fname,):
-        pass
+    async def download_and_send(self, ctx, title, fs, fname, fname2, fname3):
+        if title is None:
+            titlestring = ""
+        else:
+            titlestring = f'Title: {title}'
+        if fs < 8388119:
+            with io.open(fname, "rb") as stream:
+                await ctx.send(content=titlestring, file=discord.File(stream, filename="{}.mp4".format(title)))
+            os.remove(fname)
+        else:
+            shrink: discord.Message = await ctx.send("File is more than 8mb... attempting to shrink.")
+            subprocess.run(['ffmpeg', '-i', fname, '-crf', '24', '-vf', 'scale=ceil(iw/4)*2:ceil(ih/4)*2', '-c:a', 'copy', fname2])                   
+            fs2 = os.stat(fname2).st_size
+            if fs2 < 8388119:
+                with io.open(fname2, "rb") as stream:
+                    await ctx.send(content=titlestring, file=discord.File(stream, filename="{}.mp4".format(title)))
+                os.remove(fname)
+                os.remove(fname2)
+                await shrink.delete()
+            else:
+                await shrink.edit(content="File is still bigger than 8mb.. attempting extra shrinkage. (quality may be very bad on long videos)")
+                subprocess.run(['ffmpeg', '-i', fname2, '-preset', 'veryfast', '-crf', '28', '-c:a', 'copy', fname3])
+                fs3 = os.stat(fname3).st_size
+                if fs3 < 8388119:
+                    with io.open(fname3, "rb") as stream:
+                        await ctx.send(content=titlestring, file=discord.File(stream, filename="{}.mp4".format(title)))
+                    os.remove(fname)
+                    os.remove(fname2)
+                    os.remove(fname3)
+                    await shrink.delete()
+                else:
+                    await shrink.delete()
+                    await ctx.send("File too large, could not reduce below 8MB.")
+                    os.remove(fname)
+                    os.remove(fname2)
+                    os.remove(fname3)
+    async def calc_bitrate(self, fname, filesize):
+        pass #TODO FINISH THIS
 
     @commands.command()
     async def vredditdl(self, ctx, url):
@@ -99,82 +135,16 @@ class VRedditDL(commands.Cog):
             fname3 = '/tmp/{}3.mp4'.format(ctx.message.id)
 
             await self.check_audio(audio, fname, tmpfname, url)
-            #if audio == "yes":
-            #    subprocess.run(['youtube-dl', url, '-o', fname])
-            #    audiocheckraw = subprocess.run(['ffmpeg', '-hide_banner', '-i', fname, '-af', 'volumedetect', '-vn', '-f', 'null', '-', '2>&1'], capture_output=True)
-            #    audiocheck = audiocheckraw.stderr.decode("utf-8")[0:len(audiocheckraw.stderr)-1]
-            #    if "does not contain any stream" in audiocheck and "mean_volume:" not in audiocheck:
-            #        os.rename(fname, tmpfname)
-            #        subprocess.run(['ffmpeg', '-i', tmpfname, '-f', 'lavfi', '-i', 'anullsrc=channel_layout=stereo:sample_rate=44100', '-c:v', 'copy', '-c:a', 'aac', '-map', '0:v', '-map', '1:a', '-shortest', fname]) 
-            #        os.remove(tmpfname)
-            #else:                
-            #    subprocess.run(['youtube-dl', '-f', 'bestvideo', url, '-o', tmpfname])
-            #    subprocess.run(['ffmpeg', '-i', tmpfname, '-f', 'lavfi', '-i', 'anullsrc=channel_layout=stereo:sample_rate=44100', '-c:v', 'copy', '-c:a', 'aac', '-map', '0:v', '-map', '1:a', '-shortest', fname]) 
-            #    os.remove(tmpfname)
             
             if url.find("v.redd.it") >= 0:
-                fs = os.stat(fname).st_size
-                if fs < 8388119:
-                    stream=io.open(fname, "rb")
-                    await ctx.send(content="", file=discord.File(stream, filename="vid.mp4"))
-                    os.remove(fname)
-                else:
-                    shrink: discord.Message = await ctx.send("File is more than 8mb... attempting to shrink.")
-                    subprocess.run(['ffmpeg', '-i', fname, '-crf', '24', '-vf', 'scale=ceil(iw/4)*2:ceil(ih/4)*2', '-c:a', 'copy', fname2])                    
-                    fs2 = os.stat(fname2).st_size
-                    if fs2 < 8388119:
-                        stream=io.open(fname2, "rb")
-                        await ctx.send(content="", file=discord.File(stream, filename=f"vid.mp4"))
-                        os.remove(fname)
-                        os.remove(fname2)
-                        await shrink.delete()
-                    else:
-                        await shrink.edit(content="File is still bigger than 8mb.. attempting extra shrinkage.")
-                        subprocess.run(['ffmpeg', '-i', fname2, '-preset', 'veryfast', '-crf', '28', '-c:a', 'copy', fname3])
-                        fs3 = os.stat(fname3).st_size
-                        if fs3 < 8388119:
-                            stream=io.open(fname3, "rb")
-                            await ctx.send(content="", file=discord.File(stream, filename="vid.mp4"))
-                            await shrink.delete()
-                        else:
-                            await shrink.delete()
-                            await ctx.send("File too large, could not reduce below 8MB.")
-                        os.remove(fname)
-                        os.remove(fname2)
-                        os.remove(fname3)
+                fs = await self.file_size(fname)
+                title = None
+                await self.download_and_send(ctx, title, fs, fname, fname2, fname3)
             elif url.find("reddit.com") >= 0:
                 titleraw = subprocess.run(['youtube-dl', '--get-title', url], capture_output=True)
                 title = titleraw.stdout.decode("utf-8")[0:len(titleraw.stdout)-1]
-
                 fs = os.stat(fname).st_size
-                if fs < 8388119:
-                    stream=io.open(fname, "rb")
-                    await ctx.send(content="Title: {}".format(title), file=discord.File(stream, filename="{}.mp4".format(title)))
-                    os.remove(fname)
-                else:
-                    shrink: discord.Message = await ctx.send("File is more than 8mb... attempting to shrink.")
-                    subprocess.run(['ffmpeg', '-i', fname, '-crf', '24', '-vf', 'scale=ceil(iw/4)*2:ceil(ih/4)*2', '-c:a', 'copy', fname2])                   
-                    fs2 = os.stat(fname2).st_size
-                    if fs2 < 8388119:
-                        stream=io.open(fname2, "rb")
-                        await ctx.send(content="Title: {}".format(title), file=discord.File(stream, filename="{}.mp4".format(title)))
-                        os.remove(fname)
-                        os.remove(fname2)
-                        await shrink.delete()
-                    else:
-                        await shrink.edit(content="File is still bigger than 8mb.. attempting extra shrinkage.")
-                        subprocess.run(['ffmpeg', '-i', fname2, '-preset', 'veryfast', '-crf', '28', '-c:a', 'copy', fname3])
-                        fs3 = os.stat(fname3).st_size
-                        if fs3 < 8388119:
-                            stream=io.open(fname3, "rb")
-                            await ctx.send(content="Title: {}".format(title), file=discord.File(stream, filename="{}.mp4".format(title)))
-                            await shrink.delete()
-                        else:
-                            await shrink.delete()
-                            await ctx.send("File too large, could not reduce below 8MB.")
-                        os.remove(fname)
-                        os.remove(fname2)
-                        os.remove(fname3)
+                await self.download_and_send(ctx, title, fs, fname, fname2, fname3)
             else:
                 await ctx.send("{} is not a valid reddit link.".format(url))
                 try:
