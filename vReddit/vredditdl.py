@@ -1,3 +1,4 @@
+from email.mime import audio
 from redbot.core import Config, checks, commands
 import asyncio
 import time
@@ -37,11 +38,12 @@ class VRedditDL(commands.Cog):
             os.remove(tmpfname)
 
     async def download_and_send(self, ctx, title, fs, fname, fname2, fname3):
+        MAX_FS = 8388119
         if title is None:
             titlestring = ""
         else:
             titlestring = f'Title: {title}'
-        if fs < 8388119:
+        if fs < MAX_FS:
             with io.open(fname, "rb") as stream:
                 await ctx.send(content=titlestring, file=discord.File(stream, filename="{}.mp4".format(title)))
             os.remove(fname)
@@ -49,17 +51,17 @@ class VRedditDL(commands.Cog):
             shrink: discord.Message = await ctx.send("File is more than 8mb... attempting to shrink.")
             subprocess.run(['ffmpeg', '-i', fname, '-crf', '24', '-vf', 'scale=ceil(iw/4)*2:ceil(ih/4)*2', '-c:a', 'copy', fname2])                   
             fs2 = os.stat(fname2).st_size
-            if fs2 < 8388119:
+            if fs2 < MAX_FS:
                 with io.open(fname2, "rb") as stream:
                     await ctx.send(content=titlestring, file=discord.File(stream, filename="{}.mp4".format(title)))
                 os.remove(fname)
                 os.remove(fname2)
                 await shrink.delete()
             else:
-                await shrink.edit(content="File is still bigger than 8mb.. attempting extra shrinkage. (quality may be very bad on long videos)")
+                await shrink.edit(content="File is still bigger than 8mb.. attempting extra shrinkage.")
                 subprocess.run(['ffmpeg', '-i', fname2, '-preset', 'veryfast', '-crf', '28', '-c:a', 'copy', fname3])
                 fs3 = os.stat(fname3).st_size
-                if fs3 < 8388119:
+                if fs3 < MAX_FS:
                     with io.open(fname3, "rb") as stream:
                         await ctx.send(content=titlestring, file=discord.File(stream, filename="{}.mp4".format(title)))
                     os.remove(fname)
@@ -67,13 +69,36 @@ class VRedditDL(commands.Cog):
                     os.remove(fname3)
                     await shrink.delete()
                 else:
-                    await shrink.delete()
-                    await ctx.send("File too large, could not reduce below 8MB.")
-                    os.remove(fname)
-                    os.remove(fname2)
-                    os.remove(fname3)
-    async def calc_bitrate(self, fname, filesize):
-        pass #TODO FINISH THIS
+                    await shrink.edit(content="File is still bigger than 8mb.. attempting extra shrinkage. (quality may be very bad on long videos)")
+                    file_string_raw = subprocess.run(['ffmpeg', '-hide_banner', '-i', fname], capture_output=True)
+                    file_string = file_string_raw.stderr.decode("utf-8")[0:len(file_string_raw.stderr)-1]
+                    bitrate = await self.calc_bitrate(file_string, MAX_FS)
+                    if bitrate < 0:
+                        await ctx.send(content="Video was too long, could not shrink enough.")
+                        os.remove(fname)
+                        os.remove(fname2)
+                        os.remove(fname3)
+                        await shrink.delete()
+                    else:
+                        os.remove(fname3)
+                        subprocess.run(['ffmpeg', '-y', '-i', fname2, '-b:v',  f'{bitrate}k', '-maxrate', f'{bitrate}k', '-b:a', '128k', fname3])
+                        with io.open(fname3, "rb") as stream:
+                            await ctx.send(content=f'{titlestring} (Hoobot note: Quality may be (very) bad. click link if needed)', file=discord.File(stream, filename="{}.mp4".format(title)))
+                        os.remove(fname)
+                        os.remove(fname2)
+                        os.remove(fname3)
+                        await shrink.delete()
+    async def calc_bitrate(self, file_string, filesize):
+        audio_size = 150 * 1024 # Rounded up a little to account for variation
+        raw_duration_regex = re.search('Duration: \d\d:\d\d:\d\d.\d\d', file_string)
+        raw_duration_regex = re.search('\d\d:\d\d:\d\d', raw_duration_regex.group(0))
+        duration_array = raw_duration_regex.group(0).split(":")
+        duration = int(duration_array[0]) * 60 * 60
+        duration += int(duration_array[1]) * 60
+        duration += int(duration_array[2])
+        filesize = filesize * 8
+        bitrate = int((filesize / duration) - audio_size)
+        return int(bitrate / 1024)
 
     @commands.command()
     async def vredditdl(self, ctx, url):
