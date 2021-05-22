@@ -246,6 +246,10 @@ class VRedditDL(commands.Cog):
                     pass
             if "www.reddit.com" in url:
                 url = url.replace("www.reddit", "old.reddit")
+            elif "://reddit.com" in url:
+                url = url.replace("reddit", "old.reddit")
+            elif "new.reddit.com" in url:
+                url = url.replace("new.reddit", "old.reddit")
             elif "reddit" not in url:
                 await ctx.send("Not a valid reddit link")
                 return
