@@ -1,4 +1,4 @@
-from email.mime import audio
+from operator import sub
 from redbot.core import Config, checks, commands
 import asyncio
 import time
@@ -7,11 +7,13 @@ import os
 import io
 import discord
 import re
+import praw
 from urllib.request import Request, urlopen
 from bs4 import BeautifulSoup
 
 class VRedditDL(commands.Cog):
     """v.redd.it downloader"""
+    reddit = praw.Reddit("Hoobot", user_agent="discord:hoobot:1.0 (by u/owldyn)")
 
     def __init__(self, bot):
         """set it up"""
@@ -257,7 +259,20 @@ class VRedditDL(commands.Cog):
             urls.reverse()
             for url in urls:
                 await ctx.send("<{}>".format(url))
-        
+    
+    def get_submission_id(self, url):
+        """Returns a reddit post's ID from the url"""
+        return re.search('(http.?://.?.?.?.?reddit.com/r/[^/]*/comment.?/)([^/]*)(/.*)', url).group(2)
+
+    async def get_submission_link(self, submission_id):
+        """Gets the link of a reddit post via the post id"""
+        submission = self.reddit.submission(submission_id)
+        return submission.url
+    async def get_submission_title(self, submission_id):
+        """Gets the title of a reddit post via the post id"""
+        submission = self.reddit.submission(submission_id)
+        return submission.title
+
     @commands.command()
     async def redditlink(self, ctx, url, audio = "yes"):
         """Grab i.imgur or i.reddit links from a reddit comment page. Also will check for videos if images not found"""
@@ -269,24 +284,19 @@ class VRedditDL(commands.Cog):
                     await ctx.message.edit(suppress=True)
                 except:
                     pass
-            if "www.reddit.com" in url:
-                url = url.replace("www.reddit", "old.reddit")
-            elif "://reddit.com" in url:
-                url = url.replace("reddit", "old.reddit")
-            elif "new.reddit.com" in url:
-                url = url.replace("new.reddit", "old.reddit")
-            elif "reddit" not in url:
+            if "reddit" not in url:
                 await ctx.send("Not a valid reddit link")
                 return
-            req = Request(url,headers={'User-Agent': 'Mozilla/5.0'})
-            webpageall = urlopen(req).read().decode('utf8')
-            webpage = webpageall.partition('\n')[0]
+            submission_id = self.get_submission_id(url)
+            submission_link = await self.get_submission_link(submission_id)
+            title = await self.get_submission_title(submission_id)
+
             regexlink = []
-            regexlink.append(re.search('http.?://v.redd.it/[a-zA-Z0-9]*', str(webpage)))
-            regexlink.append(re.search('http.?://preview.redd.it/[a-zA-Z0-9]*.[pjg][npi][gf]', str(webpage)))
-            regexlink.append(re.search('http.?://i.redd.it/[a-zA-Z0-9]*.[pjg][npi][gf]', str(webpage)))
-            regexlink.append(re.search('http.?://[i]?.?imgur.com/[a-zA-Z0-9]*.[pjg][npi][gf][v]?', str(webpage)))   
-            regexlink.append(re.search('http.?://gfycat.com/[a-zA-Z0-9]*', str(webpage)))         
+            regexlink.append(re.search('http.?://v.redd.it/[a-zA-Z0-9]*', str(submission_link)))
+            regexlink.append(re.search('http.?://preview.redd.it/[a-zA-Z0-9]*.[pjg][npi][gf]', str(submission_link)))
+            regexlink.append(re.search('http.?://i.redd.it/[a-zA-Z0-9]*.[pjg][npi][gf]', str(submission_link)))
+            regexlink.append(re.search('http.?://[i]?.?imgur.com/[a-zA-Z0-9]*.[pjg][npi][gf][v]?', str(submission_link)))   
+            regexlink.append(re.search('http.?://gfycat.com/[a-zA-Z0-9]*', str(submission_link)))         
             imglink = "none"
             for search in regexlink:
                 try:
@@ -302,12 +312,7 @@ class VRedditDL(commands.Cog):
             elif "gfycat" in imglink:
                 await self.gfylink(ctx=ctx, url=imglink, redditlink=url, audio=audio)
             else:
-                #titleraw = subprocess.run(['youtube-dl', '--get-title', url], capture_output=True)
-                #title = titleraw.stdout.decode("utf-8")[0:len(titleraw.stdout)-1]
-                soup = BeautifulSoup(webpage, 'html.parser')
-                titleraw = soup.find('title')
-                title = titleraw.string.split(' : ')
-                e = discord.Embed(title=title[0])
+                e = discord.Embed(title=title)
                 e.set_image(url=imglink)
                 await ctx.send(embed=e)
                 try:
