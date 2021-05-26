@@ -264,10 +264,18 @@ class VRedditDL(commands.Cog):
         """Returns a reddit post's ID from the url"""
         return re.search('(http.?://.?.?.?.?reddit.com/r/[^/]*/comment.?/)([^/]*)(/.*)', url).group(2)
 
-    async def get_submission_link(self, submission_id):
-        """Gets the link of a reddit post via the post id"""
-        submission = self.reddit.submission(submission_id)
-        return submission.url
+    async def get_submission_title_and_link(self, submission_id):
+        """Gets the link and title of a reddit post via the post id
+           @return: [title, url]"""
+        try: 
+            submission = self.reddit.submission(submission_id)
+            title = submission.title
+            url = submission.url
+            output = [title, url]
+            return output
+        except Exception as e:
+            raise e
+
     async def get_submission_title(self, submission_id):
         """Gets the title of a reddit post via the post id"""
         submission = self.reddit.submission(submission_id)
@@ -287,9 +295,15 @@ class VRedditDL(commands.Cog):
             if "reddit" not in url:
                 await ctx.send("Not a valid reddit link")
                 return
-            submission_id = self.get_submission_id(url)
-            submission_link = await self.get_submission_link(submission_id)
-            title = await self.get_submission_title(submission_id)
+
+            try:
+                submission_id = self.get_submission_id(url)
+                title_and_link = await self.get_submission_title_and_link(submission_id)
+                title = title_and_link[0]
+                submission_link = title_and_link[1]
+            except:
+                await ctx.send("Hoot! Error fetching the reddit submission. Either Reddit is having issues or your link is not what I expect.")
+                return
 
             regexlink = []
             regexlink.append(re.search('http.?://v.redd.it/[a-zA-Z0-9]*', str(submission_link)))
