@@ -8,7 +8,7 @@ import io
 import discord
 import re
 import praw
-from urllib.request import Request, urlopen
+import requests as req
 from bs4 import BeautifulSoup
 
 class VRedditDL(commands.Cog):
@@ -25,7 +25,7 @@ class VRedditDL(commands.Cog):
         statinfo = os.stat(fname)
         return statinfo.st_size
 
-    async def check_audio(self, audio, fname, tmpfname, url):
+    async def download_and_check_audio(self, audio, fname, tmpfname, url):
         if audio == "yes":
             subprocess.run(['youtube-dl', url, '-o', fname])
             audiocheckraw = subprocess.run(['ffmpeg', '-hide_banner', '-i', fname, '-af', 'volumedetect', '-vn', '-f', 'null', '-', '2>&1'], capture_output=True)
@@ -39,12 +39,18 @@ class VRedditDL(commands.Cog):
             subprocess.run(['ffmpeg', '-i', tmpfname, '-f', 'lavfi', '-i', 'anullsrc=channel_layout=stereo:sample_rate=44100', '-c:v', 'copy', '-c:a', 'aac', '-map', '0:v', '-map', '1:a', '-shortest', fname]) 
             os.remove(tmpfname)
 
-    async def download_and_send(self, ctx, title, fs, fname, fname2, fname3):
+    async def download_and_send(self, ctx, title, audio, url):
         MAX_FS = 8388119
-        if title is None:
+        if title is None or "UNSET":
             titlestring = ""
         else:
             titlestring = f'Title: {title}'
+        tmpfname = f'/tmp/tmp{ctx.message.id}.mp4'
+        fname = '/tmp/{}.mp4'.format(ctx.message.id)
+        fname2 = '/tmp/{}2.mp4'.format(ctx.message.id)
+        fname3 = '/tmp/{}3.mp4'.format(ctx.message.id)
+        await self.download_and_check_audio(audio, fname, tmpfname, url)
+        fs = await self.file_size(fname)
         if fs < MAX_FS:
             with io.open(fname, "rb") as stream:
                 await ctx.send(content=titlestring, file=discord.File(stream, filename="{}.mp4".format(title)))
@@ -90,6 +96,7 @@ class VRedditDL(commands.Cog):
                         os.remove(fname2)
                         os.remove(fname3)
                         await shrink.delete()
+    
     async def calc_bitrate(self, file_string, filesize):
         audio_size = 150 * 1024 # Rounded up a little to account for variation
         raw_duration_regex = re.search(r'Duration: \d\d:\d\d:\d\d.\d\d', file_string)
@@ -145,8 +152,8 @@ class VRedditDL(commands.Cog):
                 await ctx.send("{} is not a valid v.redd.it link.".format(url))
         
     @commands.command()
-    async def vredditlink(self, ctx, url, audio="yes"):
-        """Downloads the vreddit video and shrinks it then attempts to upload again if too large"""
+    async def vredditlink(self, ctx, url, audio="yes", title="UNSET"):
+        """Downloads the v.redd.it video and sends it. If it is too large, attempts to shrink it."""
         async with ctx.typing():
             if url[0] == '<':
                 url = url[1:len(url)-1]
@@ -156,29 +163,41 @@ class VRedditDL(commands.Cog):
                 except:
                     pass
             
-            tmpfname = f'/tmp/tmp{ctx.message.id}.mp4'
-            fname = '/tmp/{}.mp4'.format(ctx.message.id)
-            fname2 = '/tmp/{}2.mp4'.format(ctx.message.id)
-            fname3 = '/tmp/{}3.mp4'.format(ctx.message.id)
-
-            await self.check_audio(audio, fname, tmpfname, url)
+            if "v.redd.it" in url:
+                url = req.get(url).url
             
-            if url.find("v.redd.it") >= 0:
-                fs = await self.file_size(fname)
-                title = None
-                await self.download_and_send(ctx, title, fs, fname, fname2, fname3)
-            elif url.find("reddit.com") >= 0:
-                titleraw = subprocess.run(['youtube-dl', '--get-title', url], capture_output=True)
-                title = titleraw.stdout.decode("utf-8")[0:len(titleraw.stdout)-1]
-                fs = os.stat(fname).st_size
-                await self.download_and_send(ctx, title, fs, fname, fname2, fname3)
+            if title == "UNSET":
+                id = self.get_submission_id(url)
+                title = await self.get_submission_title(id)
+
+            if "reddit.com" in url:
+                await self.download_and_send(ctx, title, audio, url)
             else:
                 await ctx.send("{} is not a valid reddit link.".format(url))
                 try:
                     await ctx.message.edit(suppress=True)
                 except:
                     pass
-                
+
+    async def gifvlink(self, ctx, url, title, audio="yes"):
+        """Downloads the v.redd.it video and sends it. If it is too large, attempts to shrink it."""
+        async with ctx.typing():
+            if url[0] == '<':
+                url = url[1:len(url)-1]
+            else: 
+                try:
+                    await ctx.message.edit(suppress=True)
+                except:
+                    pass
+
+            if "imgur" in url:
+                await self.download_and_send(ctx, title, audio, url)
+            else:
+                await ctx.send("{} is not a valid imgur link.".format(url))
+                try:
+                    await ctx.message.edit(suppress=True)
+                except:
+                    pass    
 
     async def gfylink(self, ctx, url, redditlink, audio="yes"):
         """Downloads and uploads a gfycat video"""
@@ -327,6 +346,8 @@ class VRedditDL(commands.Cog):
                 await self.vredditlink(ctx=ctx, url=url, audio=audio)
             elif "gfycat" in imglink:
                 await self.gfylink(ctx=ctx, url=imglink, redditlink=url, audio=audio)
+            elif "imgur" and ".gifv" in imglink:
+                await self.gifvlink(ctx=ctx, url=imglink, title=title)
             else:
                 e = discord.Embed(title=title)
                 e.set_image(url=imglink)
