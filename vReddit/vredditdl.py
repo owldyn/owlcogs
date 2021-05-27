@@ -92,8 +92,8 @@ class VRedditDL(commands.Cog):
                         await shrink.delete()
     async def calc_bitrate(self, file_string, filesize):
         audio_size = 150 * 1024 # Rounded up a little to account for variation
-        raw_duration_regex = re.search('Duration: \d\d:\d\d:\d\d.\d\d', file_string)
-        raw_duration_regex = re.search('\d\d:\d\d:\d\d', raw_duration_regex.group(0))
+        raw_duration_regex = re.search(r'Duration: \d\d:\d\d:\d\d.\d\d', file_string)
+        raw_duration_regex = re.search(r'\d\d:\d\d:\d\d', raw_duration_regex.group(0))
         duration_array = raw_duration_regex.group(0).split(":")
         duration = int(duration_array[0]) * 60 * 60
         duration += int(duration_array[1]) * 60
@@ -264,7 +264,7 @@ class VRedditDL(commands.Cog):
         """Returns a reddit post's ID from the url"""
         if url[len(url)-1] != '/':
             url = url + '/'
-        return re.search('(http.?://.?.?.?.?reddit.com/r/[^/]*/comment.?/)([^/]*)(/.*)', url).group(2)
+        return re.search(r'(http.?://.?.?.?.?reddit.com/r/[^/]*/comment.?/)([^/]*)(/.*)', url).group(2)
 
     async def get_submission_title_and_link(self, submission_id):
         """Gets the link and title of a reddit post via the post id
@@ -308,11 +308,11 @@ class VRedditDL(commands.Cog):
                 return
 
             regexlink = []
-            regexlink.append(re.search('http.?://v.redd.it/[a-zA-Z0-9]*', str(submission_link)))
-            regexlink.append(re.search('http.?://preview.redd.it/[a-zA-Z0-9]*.[pjg][npi][gf]', str(submission_link)))
-            regexlink.append(re.search('http.?://i.redd.it/[a-zA-Z0-9]*.[pjg][npi][gf]', str(submission_link)))
-            regexlink.append(re.search('http.?://[i]?.?imgur.com/[a-zA-Z0-9]*.[pjg][npi][gf][v]?', str(submission_link)))   
-            regexlink.append(re.search('http.?://gfycat.com/[a-zA-Z0-9]*', str(submission_link)))         
+            regexlink.append(re.search(r'http.?://v.redd.it/[a-zA-Z0-9]*', str(submission_link)))
+            regexlink.append(re.search(r'http.?://preview.redd.it/[a-zA-Z0-9]*.[pjg][npi][gf]', str(submission_link)))
+            regexlink.append(re.search(r'http.?://i.redd.it/[a-zA-Z0-9]*.[pjg][npi][gf]', str(submission_link)))
+            regexlink.append(re.search(r'http.?://[i]?.?imgur.com/[a-zA-Z0-9]*.[pjg][npi][gf][v]?', str(submission_link)))   
+            regexlink.append(re.search(r'http.?://gfycat.com/[a-zA-Z0-9]*', str(submission_link)))         
             imglink = "none"
             for search in regexlink:
                 try:
