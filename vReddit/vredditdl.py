@@ -262,6 +262,8 @@ class VRedditDL(commands.Cog):
     
     def get_submission_id(self, url):
         """Returns a reddit post's ID from the url"""
+        if url[len(url)-1] != '/':
+            url = url + '/'
         return re.search('(http.?://.?.?.?.?reddit.com/r/[^/]*/comment.?/)([^/]*)(/.*)', url).group(2)
 
     async def get_submission_title_and_link(self, submission_id):
