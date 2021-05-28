@@ -41,7 +41,7 @@ class VRedditDL(commands.Cog):
 
     async def download_and_send(self, ctx, title, audio, url):
         MAX_FS = 8388119
-        if title is None or "UNSET":
+        if title is None or title == "UNSET":
             titlestring = ""
         else:
             titlestring = f'Title: {title}'
@@ -343,7 +343,7 @@ class VRedditDL(commands.Cog):
                 imglink = imglink.replace("preview.redd", "i.redd")
 
             if "v.redd.it" in imglink:
-                await self.vredditlink(ctx=ctx, url=url, audio=audio)
+                await self.vredditlink(ctx=ctx, url=url, audio=audio, title=title)
             elif "gfycat" in imglink:
                 await self.gfylink(ctx=ctx, url=imglink, redditlink=url, audio=audio)
             elif "imgur" and ".gifv" in imglink:
