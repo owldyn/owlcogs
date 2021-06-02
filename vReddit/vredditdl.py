@@ -13,12 +13,12 @@ from bs4 import BeautifulSoup
 
 class VRedditDL(commands.Cog):
     """v.redd.it downloader"""
-    reddit = praw.Reddit("Hoobot", user_agent="discord:hoobot:1.0 (by u/owldyn)")
 
     def __init__(self, bot):
         """set it up"""
         super().__init__()
         self.bot = bot
+        self.reddit = praw.Reddit("Hoobot", user_agent="discord:hoobot:1.0 (by u/owldyn)")
 
     async def file_size(self, fname):
         """check filesize"""
