@@ -330,7 +330,7 @@ class VRedditDL(commands.Cog):
             regexlink.append(re.search(r'http.?://v.redd.it/[a-zA-Z0-9]*', str(submission_link)))
             regexlink.append(re.search(r'http.?://preview.redd.it/[a-zA-Z0-9]*.[pjg][npi][gf]', str(submission_link)))
             regexlink.append(re.search(r'http.?://i.redd.it/[a-zA-Z0-9]*.[pjg][npi][gf]', str(submission_link)))
-            regexlink.append(re.search(r'http.?://[i]?.?imgur.com/[a-zA-Z0-9]*.[pjg][npi][gf][v]?', str(submission_link)))   
+            regexlink.append(re.search(r'http.?://[i]?.?imgur.com/[a-zA-Z0-9]*.?[pjg]?[npi]?[gf]?[v]?', str(submission_link)))   
             regexlink.append(re.search(r'http.?://gfycat.com/[a-zA-Z0-9]*', str(submission_link)))         
             imglink = "none"
             for search in regexlink:
@@ -341,7 +341,10 @@ class VRedditDL(commands.Cog):
                     pass
             if "preview.redd.it" in imglink:
                 imglink = imglink.replace("preview.redd", "i.redd")
-
+            elif "/imgur.com" in imglink:
+                imglink = imglink.replace("/imgur.com", "/i.imgur.com")
+                if ".png" not in imglink and ".jpg" not in imglink and ".gif" not in imglink:
+                    imglink = imglink + ".png"
             if "v.redd.it" in imglink:
                 await self.vredditlink(ctx=ctx, url=url, audio=audio, title=title)
             elif "gfycat" in imglink:
@@ -349,6 +352,10 @@ class VRedditDL(commands.Cog):
             elif "imgur" and ".gifv" in imglink:
                 await self.gifvlink(ctx=ctx, url=imglink, title=title)
             else:
+                e = discord.Embed(title=title)
+                if imglink == "none":
+                    imglink = submission_link
+                    e.description = "Hoobot note: Trying submission url, image may not preview."
                 e = discord.Embed(title=title)
                 e.set_image(url=imglink)
                 await ctx.send(embed=e)
