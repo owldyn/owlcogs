@@ -166,11 +166,10 @@ class VRedditDL(commands.Cog):
             if "v.redd.it" in url:
                 url = req.get(url).url
             
-            if title == "UNSET":
-                id = self.get_submission_id(url)
-                title = await self.get_submission_title(id)
-
             if "reddit.com" in url:
+                if title == "UNSET":
+                    id = self.get_submission_id(url)
+                    title = await self.get_submission_title(id)
                 await self.download_and_send(ctx, title, audio, url)
             else:
                 await ctx.send("{} is not a valid reddit link.".format(url))
@@ -179,8 +178,8 @@ class VRedditDL(commands.Cog):
                 except:
                     pass
 
-    async def gifvlink(self, ctx, url, title, audio="yes"):
-        """Downloads the v.redd.it video and sends it. If it is too large, attempts to shrink it."""
+    async def genericlink(self, ctx, url, title, audio="yes"):
+        """Downloads the video and sends it. If it is too large, attempts to shrink it."""
         async with ctx.typing():
             if url[0] == '<':
                 url = url[1:len(url)-1]
@@ -190,14 +189,7 @@ class VRedditDL(commands.Cog):
                 except:
                     pass
 
-            if "imgur" in url:
-                await self.download_and_send(ctx, title, audio, url)
-            else:
-                await ctx.send("{} is not a valid imgur link.".format(url))
-                try:
-                    await ctx.message.edit(suppress=True)
-                except:
-                    pass    
+            await self.download_and_send(ctx, title, audio, url)
 
     async def gfylink(self, ctx, url, redditlink, audio="yes"):
         """Downloads and uploads a gfycat video"""
@@ -331,7 +323,8 @@ class VRedditDL(commands.Cog):
             regexlink.append(re.search(r'http.?://preview.redd.it/[a-zA-Z0-9]*.[pjg][npi][gf]', str(submission_link)))
             regexlink.append(re.search(r'http.?://i.redd.it/[a-zA-Z0-9]*.[pjg][npi][gf]', str(submission_link)))
             regexlink.append(re.search(r'http.?://[i]?.?imgur.com/[a-zA-Z0-9]*.?[pjg]?[npi]?[gf]?[v]?', str(submission_link)))   
-            regexlink.append(re.search(r'http.?://gfycat.com/[a-zA-Z0-9]*', str(submission_link)))         
+            regexlink.append(re.search(r'http.?://gfycat.com/[a-zA-Z0-9]*', str(submission_link)))  
+                   
             imglink = "none"
             for search in regexlink:
                 try:
@@ -350,7 +343,7 @@ class VRedditDL(commands.Cog):
             elif "gfycat" in imglink:
                 await self.gfylink(ctx=ctx, url=imglink, redditlink=url, audio=audio)
             elif "imgur" and ".gifv" in imglink:
-                await self.gifvlink(ctx=ctx, url=imglink, title=title)
+                await self.genericlink(ctx=ctx, url=imglink, title=title)
             else:
                 e = discord.Embed(title=title)
                 if imglink == "none":
