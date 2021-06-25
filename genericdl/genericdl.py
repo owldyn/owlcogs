@@ -5,6 +5,7 @@ import subprocess
 import os
 import io
 import discord
+import re
 
 class Genericdl(commands.Cog):
     """generic youtube-dl downloader"""
@@ -72,5 +73,33 @@ class Genericdl(commands.Cog):
                     
             else:
                 await ctx.send("{} is not a valid link.".format(url))
-        
+    
+    async def calc_bitrate(self, duration, filesize, audio_size):
+        audio_size = (int(audio_size) + 32) * 1024 # Round up a little to account for variation
+        filesize = int(filesize) * 8
+        bitrate = int((filesize / int(duration)) - audio_size)
+        return int(bitrate / 1024)
 
+    @commands.command()
+    async def clipbitrate(self, ctx, length, filesize="8M", audiobitrate="128k"):
+        """Calculates the VIDEO bitrate to use for a clip uploaded to discord. Enter duration in seconds, may change max filesize and audio bitrate optionally.
+        Usage: !clipbitrate <duration in seconds> <max filesize {8MB, 50MB, or 100MB}> <audiobitrate>"""
+        if "k" in audiobitrate:
+            audiobitrate = audiobitrate.replace("k","")
+        fallbacksize = False
+        if (filesize.lower() == "8m" or filesize.lower() == "8mb" or filesize == 8):
+            filesize = 8388119
+        elif (filesize.lower() == "50m" or filesize.lower() == "50mb" or filesize==50):
+            filesize = 52428311
+        elif (filesize.lower() == "100m" or filesize.lower() == "100mb" or filesize == 100):
+            filesize = 104808700
+        else:
+            filesize = 8388119
+            fallbacksize = True
+        bitrate = await self.calc_bitrate(length, filesize, audiobitrate)
+        message = f'Bitrate: {bitrate}k'
+        if fallbacksize == True:
+            message = message + "\nHoobot note: Did not understand filesize string, defaulting to 8MB."
+        await ctx.send(content=message)
+
+            
