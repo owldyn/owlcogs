@@ -1,4 +1,5 @@
 from operator import sub
+from typing import DefaultDict
 from redbot.core import Config, checks, commands
 import asyncio
 import time
@@ -345,11 +346,14 @@ class VRedditDL(commands.Cog):
             elif "imgur" and ".gifv" in imglink:
                 await self.genericlink(ctx=ctx, url=imglink, title=title)
             else:
-                e = discord.Embed(title=title)
+                if len(title) > 255:
+                    description = title
+                    title = ""
+                else:
+                    description = ""
+                e = discord.Embed(title=title, description=description)
                 if imglink == "none":
                     imglink = submission_link
-                    e.description = "Hoobot note: Trying submission url, image may not preview."
-                e = discord.Embed(title=title)
                 e.set_image(url=imglink)
                 await ctx.send(embed=e)
                 try:
