@@ -166,13 +166,13 @@ class ToDoList(commands.Cog):
         """Adds many items to a list. Use | between items, 'item1 | item2'"""
         item_split = item_name.split('|')
         author = ctx.message.author
-        if (str(list_name) in listss[str(author.id)]):
-            async with self.config.lists() as listss:
+        async with self.config.lists() as listss:
+            if (str(list_name) in listss[str(author.id)]):
                 for item in item_split:
                     listss[str(author.id)][list_name][item.strip()] = False
-            await ctx.message.add_reaction(self.CHECK_MARK)
-        else:
-            await ctx.send(f'List {list_name} doesn\'t exist!')
+                await ctx.message.add_reaction(self.CHECK_MARK)
+            else:
+                await ctx.send(f'List {list_name} doesn\'t exist!')
 
     @todolist.command(aliases=["removelist"])
     async def deletelist(self, ctx, list_name):
