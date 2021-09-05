@@ -10,6 +10,7 @@ import discord
 import re
 import praw
 import requests as req
+import youtube_dl
 from bs4 import BeautifulSoup
 
 class VRedditDL(commands.Cog):
@@ -25,19 +26,28 @@ class VRedditDL(commands.Cog):
         """check filesize"""
         statinfo = os.stat(fname)
         return statinfo.st_size
+    
+    async def ydl_download(self, filename, url):
+        ydl_opts = {
+            'outtmpl': filename
+        }
+        with youtube_dl.YoutubeDL(ydl_opts) as ydl:
+            dl = ydl.extract_info(url, download=True)
+            filename = ydl.prepare_filename(dl)
+        return filename
 
-    async def download_and_check_audio(self, audio, fname, tmpfname, url):
+    async def download_and_check_audio(self, ctx, audio, fname, tmpfname, url):
         if audio == "yes":
-            subprocess.run(['youtube-dl', url, '-o', fname])
+            await self.ydl_download(fname, url)
             audiocheckraw = subprocess.run(['ffmpeg', '-hide_banner', '-i', fname, '-af', 'volumedetect', '-vn', '-f', 'null', '-', '2>&1'], capture_output=True)
             audiocheck = audiocheckraw.stderr.decode("utf-8")[0:len(audiocheckraw.stderr)-1]
             if "does not contain any stream" in audiocheck and "mean_volume:" not in audiocheck:
                 os.rename(fname, tmpfname)
-                subprocess.run(['ffmpeg', '-i', tmpfname, '-f', 'lavfi', '-i', 'anullsrc=channel_layout=stereo:sample_rate=44100', '-c:v', 'copy', '-c:a', 'aac', '-map', '0:v', '-map', '1:a', '-shortest', fname]) 
+                subprocess.run(['ffmpeg', '-i', tmpfname, '-f', 'lavfi', '-i', 'anullsrc=channel_layout=stereo:sample_rate=44100', '-c:v', 'copy', '-c:a', 'aac', '-map', '0:v', '-map', '1:a', '-shortest', fname])
                 os.remove(tmpfname)
-        else:                
-            subprocess.run(['youtube-dl', '-f', 'bestvideo', url, '-o', tmpfname])
-            subprocess.run(['ffmpeg', '-i', tmpfname, '-f', 'lavfi', '-i', 'anullsrc=channel_layout=stereo:sample_rate=44100', '-c:v', 'copy', '-c:a', 'aac', '-map', '0:v', '-map', '1:a', '-shortest', fname]) 
+        else:
+            await self.ydl_download(tmpfname, url)
+            subprocess.run(['ffmpeg', '-i', tmpfname, '-f', 'lavfi', '-i', 'anullsrc=channel_layout=stereo:sample_rate=44100', '-c:v', 'copy', '-c:a', 'aac', '-map', '0:v', '-map', '1:a', '-shortest', fname])
             os.remove(tmpfname)
 
     async def download_and_send(self, ctx, title, audio, url):
@@ -50,7 +60,7 @@ class VRedditDL(commands.Cog):
         fname = '/tmp/{}.mp4'.format(ctx.message.id)
         fname2 = '/tmp/{}2.mp4'.format(ctx.message.id)
         fname3 = '/tmp/{}3.mp4'.format(ctx.message.id)
-        await self.download_and_check_audio(audio, fname, tmpfname, url)
+        await self.download_and_check_audio(ctx, audio, fname, tmpfname, url)
         fs = await self.file_size(fname)
         if fs < MAX_FS:
             with io.open(fname, "rb") as stream:
