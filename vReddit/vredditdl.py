@@ -1,3 +1,4 @@
+# pylint: disable=subprocess-run-check
 from operator import sub
 from typing import DefaultDict
 from redbot.core import Config, checks, commands
@@ -11,7 +12,6 @@ import re
 import praw
 import requests as req
 import youtube_dl
-from bs4 import BeautifulSoup
 
 class VRedditDL(commands.Cog):
     """v.redd.it downloader"""
@@ -25,8 +25,7 @@ class VRedditDL(commands.Cog):
     async def file_size(self, fname):
         """check filesize"""
         statinfo = os.stat(fname)
-        return statinfo.st_size
-    
+        return statinfo.st_size    
     async def ydl_download(self, filename, url):
         ydl_opts = {
             'outtmpl': filename
@@ -353,7 +352,7 @@ class VRedditDL(commands.Cog):
                 await self.vredditlink(ctx=ctx, url=url, audio=audio, title=title)
             elif "gfycat" in imglink:
                 await self.gfylink(ctx=ctx, url=imglink, redditlink=url, audio=audio)
-            elif "imgur" and ".gifv" in imglink:
+            elif ("imgur" in imglink) and (".gifv" in imglink):
                 await self.genericlink(ctx=ctx, url=imglink, title=title)
             else:
                 if len(title) > 255:
