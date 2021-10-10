@@ -1,9 +1,9 @@
-from redbot.core import Config, checks, commands
-import asyncio
+"""
+Todo list for Discord RedBot.
+Also will have a daily todo list that will reset... daily.
+"""
 import time
-import subprocess
-import os
-import io
+from redbot.core import Config, commands
 import discord
 
 class ToDoList(commands.Cog):
@@ -13,7 +13,6 @@ class ToDoList(commands.Cog):
     #        "USERIDHERE": {
     #            "LISTNAMEHERE": {
     #                "listoptionhere": "y/n"
-    #                
     #            }
     #        }
     #    }
@@ -33,26 +32,21 @@ class ToDoList(commands.Cog):
     @commands.group()
     async def todolist(self, ctx):
         """General list command."""
-
     @todolist.command(aliases=["createlist"])
     async def create(self, ctx, list_name: str):
         """Creates a list. List name must be one word."""
         author = ctx.message.author
         async with self.config.lists() as listss:
-            try:
-                tmp = listss[str(author.id)]
-            except:
+            if str(author.id) in listss:
+                if list_name in listss[str(author.id)]:
+                    await ctx.send(f'You already have a list named {list_name}!')
+                else:
+                    listss[str(author.id)][list_name] = {}
+                    #await ctx.send(f'Created list {list_name}!')
+                    await ctx.message.add_reaction(self.CHECK_MARK)
+            else:
                 listss[str(author.id)] = {}
                 await ctx.send('Looks like you\'re a new user! Adding your ID to the list.')
-            
-            try:
-                tmp = listss[str(author.id)][list_name]
-                await ctx.send(f'You already have a list named {list_name}!')
-            except:
-                listss[str(author.id)][list_name] = {}
-                #await ctx.send(f'Created list {list_name}!')
-                await ctx.message.add_reaction(self.CHECK_MARK)
-               
     @todolist.command()
     async def list(self, ctx):
         """Prints out all of your lists"""
@@ -60,11 +54,11 @@ class ToDoList(commands.Cog):
         lists = ""
         async with self.config.lists() as listss:
             try:
-                for key, value in listss[str(author.id)].items():
+                for key in listss[str(author.id)].items():
                     lists = lists + '\n' + key
-                e = discord.Embed(title = author.name, description = lists)
-                await ctx.send(embed=e)
-            except:
+                embed = discord.Embed(title = author.name, description = lists)
+                await ctx.send(embed=embed)
+            except KeyError:
                 await ctx.send('Error. Do you have any lists?')
 
     @todolist.command()
@@ -72,7 +66,7 @@ class ToDoList(commands.Cog):
         """Adds an item to a list"""
         author = ctx.message.author
         async with self.config.lists() as listss:
-            if (str(list_name) in listss[str(author.id)]):
+            if str(list_name) in listss[str(author.id)]:
                 listss[str(author.id)][list_name][item_name] = False
                 #await ctx.send(f'Created item {item_name} in list {list_name}.')
                 await ctx.message.add_reaction(self.CHECK_MARK)
@@ -90,84 +84,78 @@ class ToDoList(commands.Cog):
                 lists = lists + self.CHECK_MARK
             lists = lists + " " + key
         return discord.Embed(title = list_name, description = lists)
-        
 
     @todolist.command()
     async def listitems(self, ctx, list_name: str):
         """Prints out all of the items in one of your lists"""
-        author = ctx.message.author
-        lists = ""
         async with self.config.lists() as listss:
             try:
-                e = await self._create_list_embed(ctx, list_name, listss)
-                await ctx.send(embed=e)
-            except:
-                await ctx.send(f'Error. Does that list have any items?')  
+                embed = await self._create_list_embed(ctx, list_name, listss)
+                await ctx.send(embed=embed)
+            except KeyError:
+                await ctx.send('Error. Does that list have any items?')
 
     @todolist.command()
     async def checkitem(self, ctx, list_name, *, item_name):
         """Checks off an item in a list"""
         author = ctx.message.author
         async with self.config.lists() as listss:
-            if (str(list_name) in listss[str(author.id)]):
-                try:
-                    tmp = listss[str(author.id)][list_name][item_name]
+            if str(list_name) in listss[str(author.id)]:
+                if str(item_name) in listss[str(author.id)][list_name]:
                     listss[str(author.id)][list_name][item_name] = True
-                except:
+                    try:
+                        embed = await self._create_list_embed(ctx, list_name, listss)
+                        await ctx.send(embed=embed)
+                    except KeyError:
+                        await ctx.send('Error. Does that list have any items?')
+                else:
                     await ctx.send("Error. Check that you spelled the item correctly.")
-                try:
-                    e = await self._create_list_embed(ctx, list_name, listss)
-                    await ctx.send(embed=e)
-                except:
-                    await ctx.send(f'Error. Does that list have any items?')  
             else:
-                await ctx.send(f'Error. Does that list exist?')
-                
+                await ctx.send('Error. Does that list exist?')
+
     @todolist.command()
     async def uncheckitem(self, ctx, list_name, *, item_name):
         """Unchecks an item in a list"""
         author = ctx.message.author
         async with self.config.lists() as listss:
-            if (str(list_name) in listss[str(author.id)]):
-                try:
-                    tmp = listss[str(author.id)][list_name][item_name]
+            if str(list_name) in listss[str(author.id)]:
+                if str(item_name) in listss[str(author.id)][list_name]:
                     listss[str(author.id)][list_name][item_name] = False
-                except:
+                    try:
+                        embed = await self._create_list_embed(ctx, list_name, listss)
+                        await ctx.send(embed=embed)
+                    except KeyError:
+                        await ctx.send('Error. Does that list have any items?')
+                else:
                     await ctx.send("Error. Check that you spelled the item correctly.")
-                try:
-                    e = await self._create_list_embed(ctx, list_name, listss)
-                    await ctx.send(embed=e)
-                except:
-                    await ctx.send(f'Error. Does that list have any items?')  
             else:
-                await ctx.send(f'Error. Does that list exist?')
-    
+                await ctx.send('Error. Does that list exist?')
+
     @todolist.command(aliases=["removeitem"])
     async def deleteitem(self, ctx, list_name, *, item_name):
         """Deletes an item from a list. Removeitem also works."""
         author = ctx.message.author
         async with self.config.lists() as listss:
-            if (str(list_name) in listss[str(author.id)]):
+            if str(list_name) in listss[str(author.id)]:
                 try:
-                    tmp = listss[str(author.id)][list_name][item_name]
-                    del(listss[str(author.id)][list_name][item_name])
-                except:
+                    del listss[str(author.id)][list_name][item_name]
+                except KeyError:
                     await ctx.send("Error. Check that you spelled the item correctly.")
                 try:
-                    e = await self._create_list_embed(ctx, list_name, listss)
-                    await ctx.send(embed=e)
-                except:
-                    await ctx.send(f'Error. Does that list have any items?')
+                    embed = await self._create_list_embed(ctx, list_name, listss)
+                    await ctx.send(embed=embed)
+                except KeyError:
+                    await ctx.send('Error. Does that list have any items?')
             else:
-                await ctx.send(f'Error. Does that list exist?')
-    
+                await ctx.send('Error. Does that list exist?')
+
     @todolist.command()
     async def massadd(self, ctx, list_name, *, item_name):
         """Adds many items to a list. Use | between items, 'item1 | item2'"""
         item_split = item_name.split('|')
         author = ctx.message.author
         async with self.config.lists() as listss:
-            if (str(list_name) in listss[str(author.id)]):
+            if str(list_name) in listss[str(author.id)]:
                 for item in item_split:
                     listss[str(author.id)][list_name][item.strip()] = False
                 await ctx.message.add_reaction(self.CHECK_MARK)
@@ -179,11 +167,11 @@ class ToDoList(commands.Cog):
         """Deletes  a list. removelist also works."""
         author = ctx.message.author
         async with self.config.lists() as listss:
-            if (str(list_name) in listss[str(author.id)]):
+            if str(list_name) in listss[str(author.id)]:
                 try:
-                    del(listss[str(author.id)][list_name])
+                    del listss[str(author.id)][list_name]
                     await ctx.message.add_reaction(self.CHECK_MARK)
-                except:
+                except KeyError:
                     await ctx.send("Error. Check that you spelled the list correctly.")
             else:
-                await ctx.send(f'Error. Does that list exist?')
+                await ctx.send('Error. Does that list exist?')
