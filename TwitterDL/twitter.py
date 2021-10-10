@@ -14,14 +14,14 @@ import youtube_dl
 class twitter_DL(commands.Cog):
     MAX_FS = 8388119
     def setup_tweepy(self):
-        KEYS_FILE = open("/home/owldyn/.config/keystwitter.py")
-        lines = KEYS_FILE.readlines()
-        consumer_key = lines[0].rstrip()
-        consumer_secret = lines[1].rstrip()
-        access_token = lines[2].rstrip()
-        access_token_secret = lines[3].rstrip()
-        auth = tweepy.OAuthHandler(consumer_key, consumer_secret)
-        auth.set_access_token(access_token, access_token_secret)
+        with open("/home/owldyn/.config/keystwitter.py") as KEYS_FILE:
+            lines = KEYS_FILE.readlines()
+            consumer_key = lines[0].rstrip()
+            consumer_secret = lines[1].rstrip()
+            access_token = lines[2].rstrip()
+            access_token_secret = lines[3].rstrip()
+            auth = tweepy.OAuthHandler(consumer_key, consumer_secret)
+            auth.set_access_token(access_token, access_token_secret)
         return tweepy.API(auth, wait_on_rate_limit=True)
 
     def __init__(self, bot):
