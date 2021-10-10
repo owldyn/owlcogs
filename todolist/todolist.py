@@ -28,7 +28,7 @@ class ToDoList(commands.Cog):
         super().__init__()
         self.bot = bot
         self.config = Config.get_conf(self, 8996998)
-        self.config.register_global(**self.default_global_settings)                
+        self.config.register_global(**self.default_global_settings)
 
     @commands.group()
     async def todolist(self, ctx):
@@ -65,19 +65,19 @@ class ToDoList(commands.Cog):
                 e = discord.Embed(title = author.name, description = lists)
                 await ctx.send(embed=e)
             except:
-                await ctx.send(f'Error. Do you have any lists?')
+                await ctx.send('Error. Do you have any lists?')
 
     @todolist.command()
     async def additem(self, ctx, list_name: str, *, item_name: str):
         """Adds an item to a list"""
         author = ctx.message.author
-        if (str(list_name) in listss[str(author.id)]):
-            async with self.config.lists() as listss:
+        async with self.config.lists() as listss:
+            if (str(list_name) in listss[str(author.id)]):
                 listss[str(author.id)][list_name][item_name] = False
-            #await ctx.send(f'Created item {item_name} in list {list_name}.')
-            await ctx.message.add_reaction(self.CHECK_MARK)
-        else:
-            await ctx.send(f'List {list_name} doesn\'t exist!')
+                #await ctx.send(f'Created item {item_name} in list {list_name}.')
+                await ctx.message.add_reaction(self.CHECK_MARK)
+            else:
+                await ctx.send(f'List {list_name} doesn\'t exist!')
 
     async def _create_list_embed(self, ctx, list_name, listss):
         author = ctx.message.author
