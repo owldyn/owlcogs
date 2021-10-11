@@ -55,7 +55,7 @@ class ToDoList(commands.Cog):
         async with self.config.lists() as listss:
             try:
                 for key in listss[str(author.id)].items():
-                    lists = lists + '\n' + key
+                    lists = lists + '\n' + key[0]
                 embed = discord.Embed(title = author.name, description = lists)
                 await ctx.send(embed=embed)
             except KeyError:
