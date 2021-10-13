@@ -29,7 +29,7 @@ class twitter_DL(commands.Cog):
         super().__init__()
         self.bot = bot
         self.twitter = self.setup_tweepy()
-    
+
     def get_tweet_id(self, url):
         """Returns a twitter post's ID from the url"""
         if url[len(url)-1] != '/':
@@ -38,9 +38,9 @@ class twitter_DL(commands.Cog):
 
     def convert_from_tco(self, url):
         return req.get(url).url
-    
+
     @commands.command(aliases=["twitterlink"])
-    async def twittervid(self, ctx, url, audio = "yes"):
+    async def twittervid(self, ctx, url, force_gif = "no", audio = "yes"):
         """Downloads and sends a twitter video, will shrink if necessary"""
         async with ctx.typing():
             if("https://t.co" in url):
@@ -71,12 +71,12 @@ class twitter_DL(commands.Cog):
                 dl = ydl.extract_info(url, download=True)
                 filename = ydl.prepare_filename(dl)
             
-            if dl['duration'] == None:
+            if dl['duration'] is None:
                 duration = await self.get_duration(filename)
             else:
                 duration = dl['duration']
             
-            if media_type == 'gif' and duration < 5:
+            if (force_gif == "yes") or (media_type == 'gif' and duration < 5):
                 await self.make_and_send_gif(ctx, filename)
             else:
                 await self.check_audio_and_send(ctx, filename, audio)
