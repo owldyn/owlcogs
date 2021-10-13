@@ -48,10 +48,9 @@ class twitter_DL(commands.Cog):
             if("twitter.com" not in url):
                 await ctx.send("URL is not a valid twitter URL")
                 return
-            else:
-                id = self.get_tweet_id(url)
+            tweet_id = self.get_tweet_id(url)
 
-            tweet = self.twitter.get_status(id, tweet_mode='extended')
+            tweet = self.twitter.get_status(tweet_id, tweet_mode='extended')
             try:
                 tweet_str = str(tweet.extended_entities['media'])
                 if('animated_gif' in tweet_str):
