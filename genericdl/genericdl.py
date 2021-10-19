@@ -1,6 +1,7 @@
 from redbot.core import Config, checks, commands
 import asyncio
 import time
+import yt_dlp
 import subprocess
 import os
 import io
@@ -57,8 +58,8 @@ class Genericdl(commands.Cog):
             mp3fname = '/tmp/{}.mp3'.format(ctx.message.id)
             if url.find(".") >= 0:
                 try:
-                    subprocess.run(['youtube-dl', url, '--extract-audio', '--audio-format', 'mp3', '--output', '{}\%(ext)s'.format(blandfname)])
-                    titleraw = subprocess.run(['youtube-dl', '--get-title', url], capture_output=True)
+                    subprocess.run(['yt-dlp', url, '--extract-audio', '--audio-format', 'mp3', '--output', '{}\%(ext)s'.format(blandfname)])
+                    titleraw = subprocess.run(['yt-dlp', '--get-title', url], capture_output=True)
                     title = titleraw.stdout.decode("utf-8")[0:len(titleraw.stdout)-1]
 
                     fs = os.stat(mp3fname).st_size
