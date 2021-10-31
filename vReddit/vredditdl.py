@@ -287,26 +287,28 @@ class VRedditDL(commands.Cog):
             url = url + '/'
         return re.search(r'(http.?://.?.?.?.?reddit.com/r/[^/]*/comment.?/)([^/]*)(/.*)', url).group(2)
 
-    async def get_submission_title_and_link(self, submission_id):
+    async def get_submission(self, submission_id):
         """Gets the link and title of a reddit post via the post id
-           @return: [title, url]"""
+           @return: {title, url, is_self}"""
         try: 
             submission = self.reddit.submission(submission_id)
-            title = submission.title
-            url = submission.url
-            output = [title, url]
-            return output
+            return submission
         except Exception as e:
             raise e
 
-    async def get_submission_title(self, submission_id):
+    async def get_submission(self, submission_id):
         """Gets the title of a reddit post via the post id"""
         submission = self.reddit.submission(submission_id)
-        return submission.title
+        return submission
 
     @commands.command()
-    async def redditlink(self, ctx, url, audio = "yes"):
-        """Grab i.imgur or i.reddit links from a reddit comment page. Also will check for videos if images not found"""
+    async def redditlink(self, ctx, url, audio = "yes", auto = "no"):
+        """Grab i.imgur or i.reddit links from a reddit comment page. Also will check for videos if images not found.
+        Will also check for self post text and post if small enough, if nothing else is found."""
+        if auto == "no":
+            auto = False
+        else:
+            auto = True
         async with ctx.typing():
             if url[0] == '<':
                 url = url[1:len(url)-1]
@@ -316,17 +318,35 @@ class VRedditDL(commands.Cog):
                 except:
                     pass
             if "reddit" not in url:
-                await ctx.send("Not a valid reddit link")
+                if not auto:
+                    await ctx.send("Not a valid reddit link")
                 return
 
             try:
                 submission_id = self.get_submission_id(url)
-                title_and_link = await self.get_submission_title_and_link(submission_id)
-                title = title_and_link[0]
-                submission_link = title_and_link[1]
+                post_info = await self.get_submission(submission_id)
+                title = post_info.title
+                submission_link = post_info.url
+                is_self = post_info.is_self
+                selftext = post_info.selftext
             except:
-                await ctx.send("Hoot! Error fetching the reddit submission. Either Reddit is having issues or your link is not what I expect.")
+                if not auto:
+                    await ctx.send("Hoot! Error fetching the reddit submission. Either Reddit is having issues or your link is not what I expect.")
                 return
+            if is_self:
+                if len(selftext) < 1500:
+                    if len(title) > 255:
+                        return #TODO make it actually post, but cleanly
+                    else:
+                        e = discord.Embed(title=title, description=selftext)
+                        try:
+                            await ctx.send(embed=e)
+                            await ctx.message.edit(suppress=True)
+                            return
+                        except:
+                            return
+                else:
+                    return
 
             regexlink = []
             regexlink.append(re.search(r'http.?://v.redd.it/[a-zA-Z0-9]*', str(submission_link)))
@@ -369,6 +389,3 @@ class VRedditDL(commands.Cog):
                     await ctx.message.edit(suppress=True)
                 except:
                     pass
-
-
-
