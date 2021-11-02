@@ -15,12 +15,14 @@ import youtube_dl
 
 class VRedditDL(commands.Cog):
     """v.redd.it downloader"""
-
+    default_global_settings = {"channels_ignored": [], "guilds_ignored": [], "users_ignored": []}
     def __init__(self, bot):
         """set it up"""
         super().__init__()
         self.bot = bot
         self.reddit = praw.Reddit("Hoobot", user_agent="discord:hoobot:1.0 (by u/owldyn)")
+        self.conf = Config.get_conf(self, identifier=26400735)
+        self.conf.register_global(**self.default_global_settings)
 
     async def file_size(self, fname):
         """check filesize"""
@@ -338,7 +340,7 @@ class VRedditDL(commands.Cog):
                     if len(title) > 255:
                         return #TODO make it actually post, but cleanly
                     else:
-                        e = discord.Embed(title=title, description=selftext)
+                        e = discord.Embed(title=title, description=selftext.replace(">!", "||").replace("!<", "||"))
                         try:
                             await ctx.send(embed=e)
                             await ctx.message.edit(suppress=True)
@@ -353,7 +355,8 @@ class VRedditDL(commands.Cog):
             regexlink.append(re.search(r'http.?://preview.redd.it/[a-zA-Z0-9]*.[pjg][npi][gf]', str(submission_link)))
             regexlink.append(re.search(r'http.?://i.redd.it/[a-zA-Z0-9]*.[pjg][npi][gf]', str(submission_link)))
             regexlink.append(re.search(r'http.?://[i]?.?imgur.com/[a-zA-Z0-9]*.?[pjg]?[npi]?[gf]?[v]?', str(submission_link)))   
-            regexlink.append(re.search(r'http.?://gfycat.com/[a-zA-Z0-9]*', str(submission_link)))  
+            regexlink.append(re.search(r'http.?://gfycat.com/[a-zA-Z0-9]*', str(submission_link)))
+            regexlink.append(re.search(r'http.?://.?.?.?.?reddit.com/gallery/.*', str(submission_link)))
                    
             imglink = "none"
             for search in regexlink:
@@ -374,6 +377,24 @@ class VRedditDL(commands.Cog):
                 await self.gfylink(ctx=ctx, url=imglink, redditlink=url, audio=audio)
             elif ("imgur" in imglink) and (".gifv" in imglink):
                 await self.genericlink(ctx=ctx, url=imglink, title=title)
+            elif "reddit.com/gallery" in imglink:
+                gallery = []
+                discord_max_preview = 5
+
+                for i in post_info.media_metadata.items():
+                    url = i[1]['p'][0]['u']
+                    url = url.split("?")[0].replace("preview", "i")
+                    gallery.append(url)
+                while (len(gallery) > 0):
+                    message = ""
+                    i = 0
+                    while (i < discord_max_preview):
+                        i += 1
+                        if len(gallery) > 0:
+                            message += gallery.pop(0)
+                            message += '\n'
+                    await ctx.send(message)
+                await ctx.send(f'Title: {title}')
             else:
                 if len(title) > 255:
                     description = title
@@ -389,3 +410,69 @@ class VRedditDL(commands.Cog):
                     await ctx.message.edit(suppress=True)
                 except:
                     pass
+
+    @commands.guild_only()
+    @commands.group(name="autoredditignore")
+    async def autoredditignore(self, ctx):
+        """Change autoredditpost cog ignore settings."""
+
+    @autoredditignore.command(name="server")
+    @checks.admin_or_permissions(manage_guild=True)
+    async def _redditdownloadignore_server(self, ctx):
+        """Ignore/Unignore the current server"""
+
+        guild = ctx.message.guild
+        guilds = await self.conf.guilds_ignored()
+        if guild.id in guilds:
+            guilds.remove(guild.id)
+            await ctx.send("I will no longer ignore this server.")
+        else:
+            guilds.append(guild.id)
+            await ctx.send("I will ignore this server. Explicitly use !redditlink to use this feature.")
+        await self.conf.guilds_ignored.set(guilds)
+
+    @autoredditignore.command(name="channel")
+    @checks.admin_or_permissions(manage_guild=True)
+    async def _redditdownloadignore_channel(self, ctx):
+        """Ignore/Unignore the current channel"""
+
+        chan = ctx.message.channel
+        chans = await self.conf.channels_ignored()
+        if chan.id in chans:
+            chans.remove(chan.id)
+            await ctx.send("I will no longer ignore this channel.")
+        else:
+            chans.append(chan.id)
+            await ctx.send("I will ignore this channel. Explicitly use !redditlink to use this feature.")
+        await self.conf.channels_ignored.set(chans)
+
+    @autoredditignore.command(name="self")
+    async def _redditdownloadignore_user(self, ctx):
+        """Ignore/Unignore the current user"""
+
+        user = ctx.message.author
+        users = await self.conf.users_ignored()
+        if user.id in users:
+            users.remove(user.id)
+            await ctx.send("I will no longer ignore your links.")
+        else:
+            users.append(user.id)
+            await ctx.send("I will ignore your links. Explicitly use !redditlink to use this feature.")
+        await self.conf.users_ignored.set(users)
+
+    @commands.Cog.listener("on_message_without_command")
+    async def autoredditlink(self, message):
+        if message.author.bot:
+            return
+        if message.guild.id in await self.conf.guilds_ignored():
+            return
+        if message.channel.id in await self.conf.channels_ignored():
+            return
+        if message.author.id in await self.conf.users_ignored():
+            return
+        msg_content = message.content.lower()
+        if "reddit" in msg_content and "com" in msg_content:
+            reddit_regex = re.search(r'http.?://.?.?.?.?reddit.com/r/[^/]*/comment.?/[^/]*/.*', msg_content)
+            if reddit_regex:
+                ctx = await self.bot.get_context(message)
+                await self.redditlink(ctx = ctx, url = reddit_regex.group(0), auto = "no")
