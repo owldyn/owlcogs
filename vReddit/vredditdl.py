@@ -9,7 +9,7 @@ import os
 import io
 import discord
 import re
-import praw
+import asyncpraw as praw
 import requests as req
 import youtube_dl
 
@@ -141,7 +141,7 @@ class VRedditDL(commands.Cog):
                 else:
                     tmp= url.index("t/")
                     fname2 = url[tmp+2:]
-                    subprocess.run(['cp', fname, '/mnt/NAS/webshare/redditlinks/{}.mp4'.format(fname2)])
+                    subprocess.run(['cp', fname, '/mnt/NAS/NAS/webshareredditlinks/{}.mp4'.format(fname2)])
                     await ctx.send("File was too large. Link: https://owldyn.net/share/redditlinks/{}.mp4".format(fname2))
                     os.remove(fname)
             elif url.find("reddit.com") >= 0:
@@ -156,7 +156,7 @@ class VRedditDL(commands.Cog):
                     await ctx.send(content="Title: {}".format(title), file=discord.File(stream, filename="{}.mp4".format(title)))
                     os.remove(fname)
                 else:
-                    subprocess.run(['cp', fname, '/mnt/NAS/webshare/redditlinks/{}.mp4'.format(title)])
+                    subprocess.run(['cp', fname, '/mnt/NAS/NAS/webshareredditlinks/{}.mp4'.format(title)])
                     title = title.replace(' ', '%20')
                     await ctx.send("File was too large. Link: https://owldyn.net/share/redditlinks/{}.mp4".format(title))
                     os.remove(fname)
@@ -267,8 +267,8 @@ class VRedditDL(commands.Cog):
                         os.remove(fname3)
             else:
                 await ctx.send("{} is not a valid gfycat link.".format(url))
-    
-    
+
+
     @commands.command()
     async def tenor(self, ctx):
         """Search 3 previous messages for tenor links, and link them without embedding the gif"""
@@ -282,26 +282,47 @@ class VRedditDL(commands.Cog):
             urls.reverse()
             for url in urls:
                 await ctx.send("<{}>".format(url))
-    
+
     def get_submission_id(self, url):
-        """Returns a reddit post's ID from the url"""
+        """Parses reddit url, finds submission ID. Comment ID will be the second object, but will be blank if none.
+           @return: [submission_id, comment_id] """
         if url[len(url)-1] != '/':
             url = url + '/'
-        return re.search(r'(http.?://.?.?.?.?reddit.com/r/[^/]*/comment.?/)([^/]*)(/.*)', url).group(2)
+        submission_id = re.search(r'(http.?://.?.?.?.?reddit.com/r/[^/]*/comment.?/)([^/]*)(/[^/]*/?)(.*)/?', url).group(2)
+        comment_id = re.search(r'(http.?://.?.?.?.?reddit.com/r/[^/]*/comment.?/)([^/]*)(/[^/]*/?)([^/]*)/?', url).group(4)
+        return [submission_id, comment_id]
 
     async def get_submission(self, submission_id):
-        """Gets the link and title of a reddit post via the post id
-           @return: {title, url, is_self}"""
+        """Gets a reddit submission.
+           @return: Reddit submission"""
         try: 
-            submission = self.reddit.submission(submission_id)
+            submission = await self.reddit.submission(submission_id, lazy=True)
+            await submission.load()
             return submission
         except Exception as e:
             raise e
 
-    async def get_submission(self, submission_id):
-        """Gets the title of a reddit post via the post id"""
-        submission = self.reddit.submission(submission_id)
-        return submission
+    async def get_comment(self, comment_id):
+        """Gets a reddit comment.
+           @return: Comment"""
+        try:
+            comment = await self.reddit.comment(comment_id)
+            return comment
+        except Exception as e:
+            raise e
+
+    async def post_comment(self, ctx, comment_info):
+        embed_title = f'Comment by {comment_info.author.name}'
+        embed_description = comment_info.body
+        if (len(embed_title + embed_description) < 1950) and (len(embed_title) < 255):
+            embed = discord.Embed(title=embed_title, description=embed_description.replace(">!", "||").replace("!<", "||"))
+            try:
+                await ctx.send(embed=embed)
+                await ctx.message.edit(suppress=True)
+            except:
+                return
+        else: 
+            await ctx.send("Comment too long to post (Discord max limit of 2000 characters).")
 
     @commands.command()
     async def redditlink(self, ctx, url, audio = "yes", auto = "no"):
@@ -325,15 +346,22 @@ class VRedditDL(commands.Cog):
                 return
 
             try:
-                submission_id = self.get_submission_id(url)
+                ids = self.get_submission_id(url)
+                submission_id = ids[0]
+                comment_id = ids[1]
                 post_info = await self.get_submission(submission_id)
+                if comment_id:
+                    comment_info = await self.get_comment(comment_id)
+                else:
+                    comment_info = None
                 title = post_info.title
                 submission_link = post_info.url
                 is_self = post_info.is_self
                 selftext = post_info.selftext
-            except:
+            except Exception as ex:
                 if not auto:
                     await ctx.send("Hoot! Error fetching the reddit submission. Either Reddit is having issues or your link is not what I expect.")
+                    await ctx.send(f'Error: {str(ex)}')
                 return
             if is_self:
                 if len(selftext) < 1500:
@@ -385,10 +413,10 @@ class VRedditDL(commands.Cog):
                     url = i[1]['p'][0]['u']
                     url = url.split("?")[0].replace("preview", "i")
                     gallery.append(url)
-                while (len(gallery) > 0):
+                while len(gallery) > 0:
                     message = ""
                     i = 0
-                    while (i < discord_max_preview):
+                    while i < discord_max_preview:
                         i += 1
                         if len(gallery) > 0:
                             message += gallery.pop(0)
@@ -410,6 +438,9 @@ class VRedditDL(commands.Cog):
                     await ctx.message.edit(suppress=True)
                 except:
                     pass
+
+            if comment_info:
+                await self.post_comment(ctx, comment_info)
 
     @commands.guild_only()
     @commands.group(name="autoredditignore")
