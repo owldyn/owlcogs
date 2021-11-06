@@ -507,3 +507,30 @@ class VRedditDL(commands.Cog):
             if reddit_regex:
                 ctx = await self.bot.get_context(message)
                 await self.redditlink(ctx = ctx, url = reddit_regex.group(0), auto = "no")
+    
+    @commands.command()
+    async def redditcomment(self, ctx, url):
+        async with ctx.typing():
+            if url[0] == '<':
+                url = url[1:len(url)-1]
+            else: 
+                try:
+                    await ctx.message.edit(suppress=True)
+                except:
+                    pass
+            if "reddit" not in url:
+                await ctx.send("Not a valid reddit link")
+                return
+            try:
+                ids = self.get_submission_id(url)
+                comment_id = ids[1]
+                if comment_id:
+                    comment_info = await self.get_comment(comment_id)
+                    await self.post_comment(ctx, comment_info)
+                else:
+                    await ctx.send("Could not fetch comment info. Either the link isn't what I expect, or reddit is having problems.")
+                    return
+            except:
+                    await ctx.send("Could not fetch comment info. Either the link isn't what I expect, or reddit is having problems.")
+                    return
+            
