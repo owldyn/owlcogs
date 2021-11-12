@@ -321,7 +321,7 @@ class VRedditDL(commands.Cog):
                 await ctx.message.edit(suppress=True)
             except:
                 return
-        else: 
+        else:
             await ctx.send("Comment too long to post (Discord max limit of 2000 characters).")
 
     @commands.command()
@@ -413,6 +413,7 @@ class VRedditDL(commands.Cog):
                     url = i[1]['p'][0]['u']
                     url = url.split("?")[0].replace("preview", "i")
                     gallery.append(url)
+                gallery = list(reversed(gallery)) #Since reddit apparently sends the list in reverse order...
                 while len(gallery) > 0:
                     message = ""
                     i = 0
@@ -507,13 +508,13 @@ class VRedditDL(commands.Cog):
             if reddit_regex:
                 ctx = await self.bot.get_context(message)
                 await self.redditlink(ctx = ctx, url = reddit_regex.group(0), auto = "no")
-    
+
     @commands.command()
     async def redditcomment(self, ctx, url):
         async with ctx.typing():
             if url[0] == '<':
                 url = url[1:len(url)-1]
-            else: 
+            else:
                 try:
                     await ctx.message.edit(suppress=True)
                 except:
@@ -531,6 +532,6 @@ class VRedditDL(commands.Cog):
                     await ctx.send("Could not fetch comment info. Either the link isn't what I expect, or reddit is having problems.")
                     return
             except:
-                    await ctx.send("Could not fetch comment info. Either the link isn't what I expect, or reddit is having problems.")
-                    return
+                await ctx.send("Could not fetch comment info. Either the link isn't what I expect, or reddit is having problems.")
+                return
             
