@@ -367,6 +367,8 @@ class VRedditDL(commands.Cog):
                         try:
                             await ctx.send(embed=e)
                             await ctx.message.edit(suppress=True)
+                            if comment_info:
+                                await self.post_comment(ctx, comment_info)
                             return
                         except:
                             return
