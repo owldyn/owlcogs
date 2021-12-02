@@ -495,10 +495,10 @@ class VRedditDL(commands.Cog):
             return
         msg_content = message.content.lower()
         if "reddit" in msg_content and "com" in msg_content:
-            reddit_regex = re.search(r'\|?http.?://.?.?.?.?reddit.com/r/[^/]*/comment.?/[^/]*/.*', msg_content)
+            reddit_regex = re.search(r'\|?http.?:\/\/.?.?.?.?reddit.com\/r\/[^\/]*\/comment.?\/[^\/]*\/.*', msg_content)
             if reddit_regex and reddit_regex.group(0)[0] is not "|":
                 ctx = await self.bot.get_context(message)
-                await self.redditlink(ctx = ctx, url = reddit_regex.group(0), auto = "no")
+                await self.redditlink(ctx = ctx, url = reddit_regex.group(0))
 
     @commands.command()
     async def redditcomment(self, ctx, url, spoiler = "no"):
