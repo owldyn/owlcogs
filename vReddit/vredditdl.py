@@ -325,19 +325,14 @@ class VRedditDL(commands.Cog):
             await ctx.send("Comment too long to post (Discord max limit of 2000 characters).")
 
     @commands.command()
-    async def redditlink(self, ctx, url, audio = "yes", auto = "no"):
+    async def redditlink(self, ctx, url, audio = "yes"):
         """Grab i.imgur or i.reddit links from a reddit comment page. Also will check for videos if images not found.
         Will also check for self post text and post if small enough, if nothing else is found."""
-        if auto == "no":
-            auto = False
-        else:
-            auto = True
         async with ctx.typing():
             if url[0] == '<':
                 url = url[1:len(url)-1]
             if "reddit" not in url:
-                if not auto:
-                    await ctx.send("Not a valid reddit link")
+                await ctx.send("Not a valid reddit link")
                 return
 
             try:
@@ -354,9 +349,8 @@ class VRedditDL(commands.Cog):
                 is_self = post_info.is_self
                 selftext = post_info.selftext
             except Exception as ex:
-                if not auto:
-                    await ctx.send("Hoot! Error fetching the reddit submission. Either Reddit is having issues or your link is not what I expect.")
-                    await ctx.send(f'Error: {str(ex)}')
+                await ctx.send("Hoot! Error fetching the reddit submission. Either Reddit is having issues or your link is not what I expect.")
+                await ctx.send(f'Error: {str(ex)}')
                 return
             if is_self:
                 if len(selftext) < 1500:
@@ -530,4 +524,6 @@ class VRedditDL(commands.Cog):
             except:
                 await ctx.send("Could not fetch comment info. Either the link isn't what I expect, or reddit is having problems.")
                 return
-            
+    
+    @commands.command()
+    async def redditspoilerself(self, ctx, url):
