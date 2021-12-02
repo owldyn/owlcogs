@@ -501,7 +501,7 @@ class VRedditDL(commands.Cog):
                 await self.redditlink(ctx = ctx, url = reddit_regex.group(0), auto = "no")
 
     @commands.command()
-    async def redditcomment(self, ctx, url):
+    async def redditcomment(self, ctx, url, spoiler = "no"):
         async with ctx.typing():
             if "reddit" not in url:
                 await ctx.send("Not a valid reddit link")
@@ -518,6 +518,8 @@ class VRedditDL(commands.Cog):
                 comment_id = ids[1]
                 if comment_id:
                     comment_info = await self.get_comment(comment_id)
+                    if spoiler is not "no":
+                        comment_info.body = "||" + comment_info.body + "||"
                     await self.post_comment(ctx, comment_info)
                 else:
                     await ctx.send("Could not fetch comment info. Either the link isn't what I expect, or reddit is having problems.")
@@ -565,7 +567,7 @@ class VRedditDL(commands.Cog):
                     if len(title) > 255:
                         return #TODO make it actually post, but cleanly
                     else:
-                        e = discord.Embed(title=title, description=selftext.replace(">!", "||").replace("!<", "||"))
+                        e = discord.Embed(title=title, description=selftext)
                         try:
                             await ctx.send(embed=e)
                             await ctx.message.edit(suppress=True)
