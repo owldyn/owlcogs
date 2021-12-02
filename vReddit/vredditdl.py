@@ -353,7 +353,7 @@ class VRedditDL(commands.Cog):
                 await ctx.send(f'Error: {str(ex)}')
                 return
             if is_self:
-                if len(selftext) < 1500:
+                if len(selftext) < 1750:
                     if len(title) > 255:
                         return #TODO make it actually post, but cleanly
                     else:
@@ -367,6 +367,7 @@ class VRedditDL(commands.Cog):
                         except:
                             return
                 else:
+                    await ctx.send("Self post too long to post (Discord max limit of 2000 characters).")
                     return
 
             regexlink = []
@@ -502,6 +503,9 @@ class VRedditDL(commands.Cog):
     @commands.command()
     async def redditcomment(self, ctx, url):
         async with ctx.typing():
+            if "reddit" not in url:
+                await ctx.send("Not a valid reddit link")
+                return
             if url[0] == '<':
                 url = url[1:len(url)-1]
             else:
@@ -509,9 +513,6 @@ class VRedditDL(commands.Cog):
                     await ctx.message.edit(suppress=True)
                 except:
                     pass
-            if "reddit" not in url:
-                await ctx.send("Not a valid reddit link")
-                return
             try:
                 ids = self.get_submission_id(url)
                 comment_id = ids[1]
@@ -520,10 +521,61 @@ class VRedditDL(commands.Cog):
                     await self.post_comment(ctx, comment_info)
                 else:
                     await ctx.send("Could not fetch comment info. Either the link isn't what I expect, or reddit is having problems.")
+                    try:
+                        await ctx.message.edit(suppress=False)
+                    except:
+                        pass
                     return
             except:
                 await ctx.send("Could not fetch comment info. Either the link isn't what I expect, or reddit is having problems.")
+                try:
+                    await ctx.message.edit(suppress=False)
+                except:
+                    pass
                 return
     
     @commands.command()
     async def redditspoilerself(self, ctx, url):
+        async with ctx.typing():
+            if url[0] == '<':
+                url = url[1:len(url)-1]
+            if "reddit" not in url:
+                await ctx.send("Not a valid reddit link")
+                return
+
+            try:
+                ids = self.get_submission_id(url)
+                submission_id = ids[0]
+                comment_id = ids[1]
+                post_info = await self.get_submission(submission_id)
+                if comment_id and comment_id[0] is not "?":
+                    comment_info = await self.get_comment(comment_id)
+                    comment_info.body = "||" + comment_info.body + "||"
+                else:
+                    comment_info = None
+                title = post_info.title
+                is_self = post_info.is_self
+                selftext = "||" +  post_info.selftext + "||"
+            except Exception as ex:
+                await ctx.send("Hoot! Error fetching the reddit submission. Either Reddit is having issues or your link is not what I expect.")
+                await ctx.send(f'Error: {str(ex)}')
+                return
+            if is_self:
+                if len(selftext + title) < 1950:
+                    if len(title) > 255:
+                        return #TODO make it actually post, but cleanly
+                    else:
+                        e = discord.Embed(title=title, description=selftext.replace(">!", "||").replace("!<", "||"))
+                        try:
+                            await ctx.send(embed=e)
+                            await ctx.message.edit(suppress=True)
+                            if comment_info:
+                                await self.post_comment(ctx, comment_info)
+                            return
+                        except:
+                            return
+                else:
+                    await ctx.send("Self post too long to post (Discord max limit of 2000 characters).")
+                    return
+            else:
+                await ctx.send("This command currently only works for reddit selfposts.")
