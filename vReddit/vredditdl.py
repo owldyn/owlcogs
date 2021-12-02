@@ -335,11 +335,6 @@ class VRedditDL(commands.Cog):
         async with ctx.typing():
             if url[0] == '<':
                 url = url[1:len(url)-1]
-            else: 
-                try:
-                    await ctx.message.edit(suppress=True)
-                except:
-                    pass
             if "reddit" not in url:
                 if not auto:
                     await ctx.send("Not a valid reddit link")
@@ -350,7 +345,7 @@ class VRedditDL(commands.Cog):
                 submission_id = ids[0]
                 comment_id = ids[1]
                 post_info = await self.get_submission(submission_id)
-                if comment_id:
+                if comment_id and comment_id[0] is not "?":
                     comment_info = await self.get_comment(comment_id)
                 else:
                     comment_info = None
@@ -413,7 +408,6 @@ class VRedditDL(commands.Cog):
                     url = i[1]['p'][0]['u']
                     url = url.split("?")[0].replace("preview", "i")
                     gallery.append(url)
-                gallery = list(reversed(gallery)) #Since reddit apparently sends the list in reverse order...
                 while len(gallery) > 0:
                     message = ""
                     i = 0
@@ -504,8 +498,8 @@ class VRedditDL(commands.Cog):
             return
         msg_content = message.content.lower()
         if "reddit" in msg_content and "com" in msg_content:
-            reddit_regex = re.search(r'http.?://.?.?.?.?reddit.com/r/[^/]*/comment.?/[^/]*/.*', msg_content)
-            if reddit_regex:
+            reddit_regex = re.search(r'\|?http.?://.?.?.?.?reddit.com/r/[^/]*/comment.?/[^/]*/.*', msg_content)
+            if reddit_regex and reddit_regex.group(0)[0] is not "|":
                 ctx = await self.bot.get_context(message)
                 await self.redditlink(ctx = ctx, url = reddit_regex.group(0), auto = "no")
 
