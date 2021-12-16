@@ -1,6 +1,7 @@
 # pylint: disable=subprocess-run-check
 from operator import sub
 from typing import DefaultDict
+from asyncpraw import reddit
 from redbot.core import Config, checks, commands
 import asyncio
 import time
@@ -181,7 +182,7 @@ class VRedditDL(commands.Cog):
             if "reddit.com" in url:
                 if title == "UNSET":
                     id = self.get_submission_id(url)
-                    title = await self.get_submission_title(id)
+                    title = await self.get_submission(id).title
                 await self.download_and_send(ctx, title, audio, url)
             else:
                 await ctx.send("{} is not a valid reddit link.".format(url))
@@ -398,23 +399,7 @@ class VRedditDL(commands.Cog):
             elif ("imgur" in imglink) and (".gifv" in imglink):
                 await self.genericlink(ctx=ctx, url=imglink, title=title)
             elif "reddit.com/gallery" in imglink:
-                gallery = []
-                discord_max_preview = 5
-
-                for i in post_info.media_metadata.items():
-                    url = i[1]['p'][0]['u']
-                    url = url.split("?")[0].replace("preview", "i")
-                    gallery.append(url)
-                while len(gallery) > 0:
-                    message = ""
-                    i = 0
-                    while i < discord_max_preview:
-                        i += 1
-                        if len(gallery) > 0:
-                            message += gallery.pop(0)
-                            message += '\n'
-                    await ctx.send(message)
-                await ctx.send(f'Title: {title}')
+                await self.sendredditgallery(ctx, post_info)
             else:
                 if len(title) > 255:
                     description = title
@@ -433,7 +418,25 @@ class VRedditDL(commands.Cog):
 
             if comment_info:
                 await self.post_comment(ctx, comment_info)
-
+    async def sendredditgallery(self, ctx, post_info):
+        """posts a gallery in order, only 5 per message or discord won't preview them all"""
+        gallery = []
+        discord_max_preview = 5
+        ids = [i['media_id'] for i in post_info.gallery_data['items']]
+        for id in ids:
+            url = post_info.media_metadata[id]['p'][0]['u']
+            url = url.split("?")[0].replace("preview", "i")
+            gallery.append(url)
+        while len(gallery) > 0:
+            message = ""
+            i = 0
+            while i < discord_max_preview:
+                i += 1
+                if len(gallery) > 0:
+                    message += gallery.pop(0)
+                    message += '\n'
+            await ctx.send(message)
+        await ctx.send(f'Title: {post_info.title}')
     @commands.guild_only()
     @commands.group(name="autoredditignore")
     async def autoredditignore(self, ctx):
@@ -496,9 +499,16 @@ class VRedditDL(commands.Cog):
         msg_content = message.content.lower()
         if "reddit" in msg_content and "com" in msg_content:
             reddit_regex = re.search(r'\|?http.?:\/\/.?.?.?.?reddit.com\/r\/[^\/]*\/comment.?\/[^\/]*\/.*', msg_content)
-            if reddit_regex and reddit_regex.group(0)[0] is not "|":
-                ctx = await self.bot.get_context(message)
+            reddit_gallery_regex = re.search(r'(\|?http.?:\/\/.?.?.?.?reddit.com\/gallery\/)([^\/]*)(\/?.*)', msg_content)
+            #https://www.reddit.com/gallery/rfkt87
+            ctx = await self.bot.get_context(message)
+            if reddit_regex and reddit_regex.group(0)[0] is not "|":                
                 await self.redditlink(ctx = ctx, url = reddit_regex.group(0))
+            elif reddit_gallery_regex:
+                async with ctx.typing():
+                    post_info = await self.get_submission(reddit_gallery_regex.group(2))
+                    await self.sendredditgallery(ctx, post_info)
+
 
     @commands.command()
     async def redditcomment(self, ctx, url, spoiler = "no"):
