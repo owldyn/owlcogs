@@ -7,6 +7,7 @@ import os
 import io
 import discord
 import re
+import shutil
 
 class Genericdl(commands.Cog):
     """generic youtube-dl downloader"""
@@ -15,8 +16,9 @@ class Genericdl(commands.Cog):
         """set it up"""
         super().__init__()
         self.bot = bot
+        self.web_folder_name = "/mnt/NAS/NAS/webshare/gimmemp3/"
+        self.web_server_name = "https://owldyn.net/share/gimmemp3/"
 
-        
     @commands.command()
     async def vidlink(self, ctx, url):
         """Downloads the linked video"""
@@ -34,11 +36,11 @@ class Genericdl(commands.Cog):
 
                     fs = os.stat(fname).st_size
                     if fs < 8388119:
-                        stream=io.open(fname, "rb")
-                        await ctx.send(content="Title: {}".format(title), file=discord.File(stream, filename="{}.webm".format(title)))
+                        with io.open(fname, "rb") as stream:
+                            await ctx.send(content="Title: {}".format(title), file=discord.File(stream, filename="{}.webm".format(title)))
                         os.remove(fname)
                     else:
-                        await ctx.send("File too large. Use link to watch.")
+                        self.move_to_webserver(ctx, fname, '.webm')
                 except Exception as e:
                     await ctx.send("Hoot! Error occured. Perhaps youtube-dl is broke with this website?")
                     await ctx.send(f'Error is: {str(e)}')
@@ -47,7 +49,7 @@ class Genericdl(commands.Cog):
             else:
                 await ctx.send("{} is not a valid link.".format(url))
 
-    @commands.command()
+    @commands.command() #TODO CHANGE THIS TO USE NATIVE YT-DLP
     async def gimmemp3(self, ctx, url):
         """Downloads the linked audio"""
         async with ctx.typing():
@@ -64,18 +66,21 @@ class Genericdl(commands.Cog):
 
                     fs = os.stat(mp3fname).st_size
                     if fs < 8388119:
-                        stream=io.open(mp3fname, "rb")
-                        await ctx.send(content="Title: {}".format(title), file=discord.File(stream, filename="{}.mp3".format(title)))
+                        with io.open(mp3fname, "rb") as stream:
+                            await ctx.send(content="Title: {}".format(title), file=discord.File(stream, filename="{}.mp3".format(title)))
                         os.remove(mp3fname)
                     else:
-                        await ctx.send("File too large.")
-                except:
+                        self.move_to_webserver(ctx, mp3fname, '.mp3')
+                except Exception as e:
                     await ctx.send("Hoot! Error occured. Perhaps youtube-dl is broke with this website?")
-                    pass
-                    
+                    await ctx.send(f'Error is: {str(e)}') 
             else:
                 await ctx.send("{} is not a valid link.".format(url))
-    
+    async def move_to_webserver(self, ctx, fname, ext):
+        shutil.move(fname, f'{self.web_folder_name}{ctx.message.id}.{ext}')
+        webfilename = f'{self.web_server_name}{ctx.message.id}.{ext}'
+        await ctx.send(f'File too large for discord.\nFile uploaded to {webfilename}.') 
+
     async def calc_bitrate(self, duration, filesize, audio_size):
         """Returns the bitrate ( in kilobits ) for a given string containing the duration, and the given max filesize (in bytes)
         Duration string should contain the duration with "Duration: 00:00:00.00"
@@ -121,5 +126,3 @@ class Genericdl(commands.Cog):
         if fallbacksize == True:
             message = message + "\nHoobot note: Did not understand filesize string, defaulting to 8MB."
         await ctx.send(content=message)
-
-            
