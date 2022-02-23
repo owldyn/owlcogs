@@ -142,7 +142,8 @@ class VRedditDL(commands.Cog):
                 else:
                     tmp= url.index("t/")
                     fname2 = url[tmp+2:]
-                    subprocess.run(['cp', fname, '/mnt/NAS/NAS/webshareredditlinks/{}.mp4'.format(fname2)])
+                    WEB_SERVER_FOLDER = "/mnt/NAS/webshare/redditlinks/" #TODO this doesn't work as a global how I was doing it and can't be bothered to figure it out atm
+                    subprocess.run(['cp', fname, f'{WEB_SERVER_FOLDER}{fname2}.mp4'])
                     await ctx.send("File was too large. Link: https://owldyn.net/share/redditlinks/{}.mp4".format(fname2))
                     os.remove(fname)
             elif url.find("reddit.com") >= 0:
@@ -157,7 +158,8 @@ class VRedditDL(commands.Cog):
                     await ctx.send(content="Title: {}".format(title), file=discord.File(stream, filename="{}.mp4".format(title)))
                     os.remove(fname)
                 else:
-                    subprocess.run(['cp', fname, '/mnt/NAS/NAS/webshareredditlinks/{}.mp4'.format(title)])
+                    WEB_SERVER_FOLDER = "/mnt/NAS/webshare/redditlinks/"
+                    subprocess.run(['cp', fname, f'{WEB_SERVER_FOLDER}{title}.mp4'])
                     title = title.replace(' ', '%20')
                     await ctx.send("File was too large. Link: https://owldyn.net/share/redditlinks/{}.mp4".format(title))
                     os.remove(fname)
