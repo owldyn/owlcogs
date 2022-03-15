@@ -103,7 +103,8 @@ class MessageIndex(commands.Cog):
                 count += 1
             await ctx.send(f'Processed {count} messages.')
 
-    def _create_message(self, message: commands.context.Context):
+    @staticmethod
+    def _create_message(message: commands.context.Context):
         message_info = {}
         message_info['guild_id'] = message.guild.id
         message_info['user_id'] = message.author.id
