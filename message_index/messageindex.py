@@ -54,7 +54,7 @@ class MessageIndex(commands.Cog):
     @commands.admin()
     @messageindex.command()
     async def removeguild(self, ctx):
-        """Initializes the guild. Makes it where it only works if you want it in that server."""
+        """Removes the guild. Makes it where it no longer works in the server."""
         async with self.config.guilds() as guilds:
             if ctx.guild.id in guilds:
                 guilds.remove(ctx.guild.id)
@@ -111,7 +111,7 @@ class MessageIndex(commands.Cog):
         message_info['channel_id'] = message.channel.id
         message_info['message_id'] = message.id
         message_info['message_content'] = message.content
-        message_info['time_sent'] = str(message.created_at)
+        message_info['time_sent'] = str(message.created_at.astimezone())
         message_info['author_name'] = message.author.name
         if len(message.attachments) != 0:
             message_info['image_link'] = message.attachments[0].url
