@@ -2,9 +2,10 @@
 Todo list for Discord RedBot.
 Also will have a daily todo list that will reset... daily.
 """
-import time
-from redbot.core import Config, commands
+
 import discord
+from redbot.core import Config, commands
+
 
 class ToDoList(commands.Cog):
     """Todo List"""
