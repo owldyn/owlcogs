@@ -504,7 +504,7 @@ class VRedditDL(commands.Cog):
             reddit_gallery_regex = re.search(r'(\|?http.?:\/\/.?.?.?.?reddit.com\/gallery\/)([^\/]*)(\/?.*)', msg_content)
             #https://www.reddit.com/gallery/rfkt87
             ctx = await self.bot.get_context(message)
-            if reddit_regex and reddit_regex.group(0)[0] is not "|":                
+            if reddit_regex and reddit_regex.group(0)[0] != "|":
                 await self.redditlink(ctx = ctx, url = reddit_regex.group(0))
             elif reddit_gallery_regex:
                 async with ctx.typing():

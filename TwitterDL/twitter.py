@@ -1,15 +1,14 @@
-from operator import sub
-from redbot.core import Config, checks, commands
-import asyncio
-import time
-import subprocess
-import os
 import io
-import discord
+import os
 import re
-import tweepy
+import subprocess
+
+import discord
 import requests as req
+import tweepy
 import youtube_dl
+from redbot.core import commands
+
 
 class twitter_DL(commands.Cog):
     MAX_FS = 8388119
@@ -70,27 +69,33 @@ class twitter_DL(commands.Cog):
             with youtube_dl.YoutubeDL(ydl_opts) as ydl:
                 dl = ydl.extract_info(url, download=True)
                 filename = ydl.prepare_filename(dl)
-            
+
             if dl['duration'] is None:
                 duration = await self.get_duration(filename)
             else:
                 duration = dl['duration']
-            
+
             if (force_gif == "yes") or (media_type == 'gif' and duration < 5):
                 await self.make_and_send_gif(ctx, filename)
             else:
                 await self.check_audio_and_send(ctx, filename, audio)
-            
-    
+
+
     async def check_audio_and_send(self, ctx, filename, audio):
         tmpfname = f'{filename}_tmp.mp4'
         if audio == "yes":
             audiocheckraw = subprocess.run(['ffmpeg', '-hide_banner', '-i', filename, '-af', 'volumedetect', '-vn', '-f', 'null', '-', '2>&1'], capture_output=True)
             audiocheck = audiocheckraw.stderr.decode("utf-8")[0:len(audiocheckraw.stderr)-1]
             if "does not contain any stream" in audiocheck and "mean_volume:" not in audiocheck:
-                await self.ffmpeg(['ffmpeg', '-i', tmpfname, '-f', 'lavfi', '-i', 'anullsrc=channel_layout=stereo:sample_rate=44100', '-c:v', 'copy', '-c:a', 'aac', '-map', '0:v', '-map', '1:a', '-shortest', filename], filename, tmpfname)
+                await self.ffmpeg(['ffmpeg', '-i', tmpfname, '-f', 'lavfi', '-i',
+                                   'anullsrc=channel_layout=stereo:sample_rate=44100', 
+                                   '-c:v', 'copy', '-c:a', 'aac', '-map', '0:v', '-map', 
+                                   '1:a', '-shortest', filename], filename, tmpfname)
         else:
-            await self.ffmpeg(['ffmpeg', '-i', tmpfname, '-f', 'lavfi', '-i', 'anullsrc=channel_layout=stereo:sample_rate=44100', '-c:v', 'copy', '-c:a', 'aac', '-map', '0:v', '-map', '1:a', '-shortest', filename], filename, tmpfname)
+            await self.ffmpeg(['ffmpeg', '-i', tmpfname, '-f', 'lavfi', '-i', 
+                               'anullsrc=channel_layout=stereo:sample_rate=44100',
+                               '-c:v', 'copy', '-c:a', 'aac', '-map', '0:v', '-map',
+                               '1:a', '-shortest', filename], filename, tmpfname)
         fs = await self.file_size(filename)
         if fs < self.MAX_FS:
             with io.open(filename, "rb") as stream:
@@ -122,7 +127,8 @@ class twitter_DL(commands.Cog):
     async def make_and_send_gif(self, ctx, mp4_filename, i=0):
         tmpfname = f'{mp4_filename}_tmp.mp4'
         filename = f'{mp4_filename}.gif'
-        subprocess.run(['ffmpeg', '-i', mp4_filename, '-filter_complex', "[0:v] split [a][b];[b]fifo[bb];[a] palettegen [p];[bb][p] paletteuse", filename])
+        subprocess.run(['ffmpeg', '-i', mp4_filename, '-filter_complex',
+                        "[0:v] split [a][b];[b]fifo[bb];[a] palettegen [p];[bb][p] paletteuse", filename])
         fs = await self.file_size(filename)
         if fs < self.MAX_FS:
             if i == 0:
@@ -139,8 +145,6 @@ class twitter_DL(commands.Cog):
             await self.ffmpeg(['ffmpeg', '-i', tmpfname, '-crf', '24', '-vf', 'scale=ceil(iw/4)*2:ceil(ih/4)*2', '-c:a', 'copy', mp4_filename], mp4_filename, tmpfname)
             os.remove(filename)
             await self.make_and_send_gif(ctx, mp4_filename, i=i+1)
-
-
 
     async def get_duration(self, filename):
         result = subprocess.run(['ffprobe', '-v', 'error', '-show_entries', 'format=duration', '-of', 'default=noprint_wrappers=1:nokey=1', filename], stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
