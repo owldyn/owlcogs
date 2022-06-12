@@ -69,7 +69,8 @@ class MessageIndex(commands.Cog):
     async def search(self, ctx, *, search): #TODO https://stackoverflow.com/questions/65082883/discord-py-detecting-reactions
         """Searches messages, for now only returns the first one."""
         search_terms = "".join(search)
-        request = requests.get(f'http://192.168.1.102:9000/api/search/{search_terms}')
+        params = {'guild_id': ctx.guild.id}
+        request = requests.get(f'http://192.168.1.102:9000/api/search/{search_terms}', params=params)
         if len(request.json()) < 1:
             await ctx.send("No result.")
         else:
