@@ -36,8 +36,7 @@ class Turns(commands.Cog):
             else:
                 turn_list = config_turn_list.get(str(ctx.guild.id), None)
                 if turn_list:
-                    for t_l in turn_list:
-                        await ctx.send(t_l)
+                    await ctx.send('\n'.join(turn_list))
                 else:
                     await ctx.send("This guild doesn't have any!")
 
