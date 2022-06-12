@@ -16,7 +16,7 @@ class Genericdl(commands.Cog):
         """set it up"""
         super().__init__()
         self.bot = bot
-        self.web_folder_name = "/mnt/NAS/NAS/webshare/gimmemp3/"
+        self.web_folder_name = "/mnt/NAS/webshare/gimmemp3/"
         self.web_server_name = "https://owldyn.net/share/gimmemp3/"
 
     @commands.command()
@@ -40,7 +40,7 @@ class Genericdl(commands.Cog):
                             await ctx.send(content="Title: {}".format(title), file=discord.File(stream, filename="{}.webm".format(title)))
                         os.remove(fname)
                     else:
-                        self.move_to_webserver(ctx, fname, '.webm')
+                        await self.move_to_webserver(ctx, fname, '.webm')
                 except Exception as e:
                     await ctx.send("Hoot! Error occured. Perhaps youtube-dl is broke with this website?")
                     await ctx.send(f'Error is: {str(e)}')
@@ -70,7 +70,7 @@ class Genericdl(commands.Cog):
                             await ctx.send(content="Title: {}".format(title), file=discord.File(stream, filename="{}.mp3".format(title)))
                         os.remove(mp3fname)
                     else:
-                        self.move_to_webserver(ctx, mp3fname, '.mp3')
+                        await self.move_to_webserver(ctx, mp3fname, '.mp3')
                 except Exception as e:
                     await ctx.send("Hoot! Error occured. Perhaps youtube-dl is broke with this website?")
                     await ctx.send(f'Error is: {str(e)}') 
