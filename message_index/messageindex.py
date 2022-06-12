@@ -10,6 +10,7 @@ from redbot.core import Config, commands
 #import re
 import requests
 import discord
+
 class MessageIndex(commands.Cog):
     """
 
@@ -77,7 +78,10 @@ class MessageIndex(commands.Cog):
             embed_description = f'[Message by <@!{message["user_id"]}>]({link_to_message})\n{message["message_content"]}'
             embed = discord.Embed(description=embed_description)
             try:
-                await ctx.send(embed=embed)
+                message: commands.context.Context = await ctx.send(embed=embed)
+                #await messsage.
+
+
             except:
                 return
 
@@ -91,16 +95,42 @@ class MessageIndex(commands.Cog):
 
     @commands.admin()
     @messageindex.command()
+    async def test_one(self, ctx):
+        """Grabs the last 100 messages. Used for testing."""
+        async for message in ctx.channel.history(limit=1):
+            req = self._upload_message(message)
+            await ctx.send(req.content)
+
+    @commands.admin()
+    @messageindex.command()
     async def grab_all_from_channel(self, ctx):
         """Grabs all the messages in this channel. Used for testing."""
         await ctx.send('Grabbing all messages. THIS WILL PROBABLY TAKE A WHILE.')
         async with ctx.typing():
             count = 0
             async for message in ctx.channel.history(limit=None):
-                message_info = self._create_message(message)
-                requests.post('http://192.168.1.102:9000/api/addmessage/',
-                               data=json.dumps(message_info))
+                self._upload_message(message)
                 count += 1
+            await ctx.send(f'Processed {count} messages.')
+
+    def _upload_message(self, message: commands.context.Context):
+        message_info = self._create_message(message)
+        req = requests.post('http://192.168.1.102:9000/api/addmessage/',
+                        data=json.dumps(message_info))
+        return req
+    
+    @commands.admin()
+    @messageindex.command()
+    async def grab_all_from_guild(self, ctx):
+        """Grabs all the messages in this guild. Used for testing."""
+        await ctx.send('Grabbing all messages. THIS WILL TAKE A WHILE.')
+        async with ctx.typing():
+            count = 0
+            for channel in ctx.guild.channels:
+                if type(channel) is discord.TextChannel:
+                    async for message in channel.history(limit=None):
+                        self._upload_message(message)
+                        count += 1
             await ctx.send(f'Processed {count} messages.')
 
     @staticmethod
