@@ -25,6 +25,7 @@ class MessageIndex(commands.Cog):
     def __init__(self, bot):
         """set it up"""
         super().__init__()
+        self.ip = "192.168.1.117:59999"
         self.bot = bot
         self.config = Config.get_conf(self, 4007355432)
         self.config.register_global(**self.default_global_settings)
@@ -66,11 +67,17 @@ class MessageIndex(commands.Cog):
 
     @commands.is_owner()
     @messageindex.command()
-    async def search(self, ctx, *, search): #TODO https://stackoverflow.com/questions/65082883/discord-py-detecting-reactions
+    async def search(self, ctx, *search): #TODO https://stackoverflow.com/questions/65082883/discord-py-detecting-reactions
         """Searches messages, for now only returns the first one."""
-        search_terms = "".join(search)
+        filters = [('image_link:', 'image_link'), ('author_name:', 'author_name')]
         params = {'guild_id': ctx.guild.id}
-        request = requests.get(f'http://192.168.1.102:9000/api/search/{search_terms}', params=params)
+        filt = self.check_for_filters(search, filters)
+        while filt:
+            params[filt] = search[0].split(':')[1]
+            search = search[1:]
+            filt = self.check_for_filters(search, filters)
+        search_terms = " ".join(search)
+        request = requests.get(f'http://{self.ip}/api/search/{search_terms}', params=params)
         if len(request.json()) < 1:
             await ctx.send("No result.")
         else:
@@ -85,6 +92,12 @@ class MessageIndex(commands.Cog):
 
             except:
                 return
+    @staticmethod
+    def check_for_filters(search:list, filters:list) -> str:
+        for filt in filters:
+            if filt[0] in search:
+                return filt[1]
+        return None
 
     @commands.admin()
     @messageindex.command()
@@ -92,7 +105,7 @@ class MessageIndex(commands.Cog):
         """Grabs the last 100 messages. Used for testing."""
         async for message in ctx.channel.history(limit=100):
             message_info = self._create_message(message)
-            requests.post('http://192.168.1.102:9000/api/addmessage/',data=json.dumps(message_info))
+            requests.post(f'http://{self.ip}/api/addmessage/',data=json.dumps(message_info))
 
     @commands.admin()
     @messageindex.command()
@@ -116,10 +129,10 @@ class MessageIndex(commands.Cog):
 
     def _upload_message(self, message: commands.context.Context):
         message_info = self._create_message(message)
-        req = requests.post('http://192.168.1.102:9000/api/addmessage/',
+        req = requests.post(f'http://{self.ip}/api/addmessage/',
                         data=json.dumps(message_info))
         return req
-    
+
     @commands.admin()
     @messageindex.command()
     async def grab_all_from_guild(self, ctx):
@@ -149,3 +162,11 @@ class MessageIndex(commands.Cog):
         else:
             message_info['image_link'] = ""
         return message_info
+
+    @commands.Cog.listener("on_message_without_command")
+    async def autosave(self, message):
+        if not message.guild.id in await self.config.guilds():
+            return
+        if message.author == self.bot.user:
+            return
+        await self._upload_message(message)
