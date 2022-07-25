@@ -28,5 +28,8 @@ class OwlUtils(commands.Cog):
             - "traefik.http.services.{hostname}.loadbalancer.server.port={port}"
             - "traefik.docker.network=proxy"
 ```
+```networks:
+  proxy:
+    external: true```
         """
         await ctx.send(config)
