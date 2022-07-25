@@ -69,7 +69,7 @@ class MessageIndex(commands.Cog):
     @messageindex.command()
     async def search(self, ctx, *search): #TODO https://stackoverflow.com/questions/65082883/discord-py-detecting-reactions
         """Searches messages, for now only returns the first one."""
-        filters = [('image_link:', 'image_link'), ('author_name:', 'author_name')]
+        filters = [('image_link:', 'image_link'), ('author:', 'author')]
         params = {'guild_id': ctx.guild.id}
         filt = self.check_for_filters(search, filters)
         while filt:
@@ -95,7 +95,7 @@ class MessageIndex(commands.Cog):
     @staticmethod
     def check_for_filters(search:list, filters:list) -> str:
         for filt in filters:
-            if filt[0] in search:
+            if filt[0] in search[0]:
                 return filt[1]
         return None
 
