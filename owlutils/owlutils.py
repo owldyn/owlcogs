@@ -15,6 +15,7 @@ class OwlUtils(commands.Cog):
         """create portainer labels for traefik"""
         config = f"""```        networks:
           - proxy
+          - default
         labels:
             - "traefik.enable=true"
             - "traefik.http.routers.{hostname}.entrypoints=http"
