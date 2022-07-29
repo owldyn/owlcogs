@@ -18,6 +18,7 @@ class OwlUtils(commands.Cog):
           - default
         labels:
             - "traefik.enable=true"
+            # Remove below for external only
             - "traefik.http.routers.{hostname}.entrypoints=http"
             - "traefik.http.routers.{hostname}.rule=Host(`{hostname}.local.owldyn.net`)"
             - "traefik.http.middlewares.{hostname}-https-redirect.redirectscheme.scheme=https"
@@ -28,6 +29,16 @@ class OwlUtils(commands.Cog):
             - "traefik.http.routers.{hostname}-secure.service={hostname}"
             - "traefik.http.services.{hostname}.loadbalancer.server.port={port}"
             - "traefik.docker.network=proxy"
+            # Remove below for local only
+            - "traefik.http.routers.{hostname}-external.entrypoints=http"
+            - "traefik.http.routers.{hostname}-external.rule=Host(`{hostname}.owldyn.net`)"
+            - "traefik.http.middlewares.{hostname}-external-https-redirect.redirectscheme.scheme=https"
+            - "traefik.http.routers.{hostname}-external.middlewares={hostname}-https-redirect"
+            - "traefik.http.routers.{hostname}-external-secure.entrypoints=https"
+            - "traefik.http.routers.{hostname}-external-secure.rule=Host(`{hostname}.owldyn.net`)"
+            - "traefik.http.routers.{hostname}-external-secure.tls=true"
+            - "traefik.http.routers.{hostname}-external-secure.service={hostname}-external"
+            - "traefik.http.services.{hostname}-external.loadbalancer.server.port={port}"
 ```
 ```networks:
   proxy:
