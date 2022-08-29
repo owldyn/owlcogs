@@ -28,6 +28,7 @@ class OwlUtils(commands.Cog):
             - "traefik.http.routers.{hostname}-secure.tls=true"
             - "traefik.http.routers.{hostname}-secure.service={hostname}"
             - "traefik.http.services.{hostname}.loadbalancer.server.port={port}"
+            - "traefik.http.routers.{hostname}-secure.middlewares=secured@file"
             - "traefik.docker.network=proxy"
             # Remove below for local only
             - "traefik.http.routers.{hostname}-external.entrypoints=http"
