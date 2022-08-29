@@ -105,7 +105,7 @@ class MessageIndex(commands.Cog):
         """Grabs the last 100 messages. Used for testing."""
         async for message in ctx.channel.history(limit=100):
             message_info = self._create_message(message)
-            requests.post(f'http://{self.ip}/api/addmessage/',data=json.dumps(message_info))
+            requests.post(f'http://{self.ip}/api/addmessage/',data=message_info)
 
     @commands.admin()
     @messageindex.command()
