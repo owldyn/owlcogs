@@ -42,6 +42,18 @@ class twitter_DL(commands.Cog):
     async def twittervid(self, ctx, url, force_gif = "no", audio = "yes"):
         """Downloads and sends a twitter video, will shrink if necessary"""
         async with ctx.typing():
+            if url == '^':
+                if ctx.message.reference:
+                    message = await ctx.channel.fetch_message(ctx.message.reference.message_id)
+                    args = message.content.split(' ')
+                    await self.twittervid(ctx, *args)
+                    return
+                async for message in ctx.channel.history(limit=5):
+                    if "https://t.co" in message.content or 'twitter.com' in message.content:
+                        if '!twittervid' not in message.content:
+                            args = message.content.split(' ')
+                            await self.twittervid(ctx, *args)
+                return
             if("https://t.co" in url):
                 url = self.convert_from_tco(url)
             if("twitter.com" not in url):
