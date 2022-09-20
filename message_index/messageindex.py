@@ -130,7 +130,7 @@ class MessageIndex(commands.Cog):
     def _upload_message(self, message: commands.context.Context):
         message_info = self._create_message(message)
         req = requests.post(f'http://{self.ip}/api/addmessage/',
-                        data=json.dumps(message_info))
+                        json=message_info)
         return req
 
     @commands.admin()
