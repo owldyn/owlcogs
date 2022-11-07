@@ -14,21 +14,26 @@ import asyncpraw as praw
 import requests as req
 import youtube_dl
 
+
 class VRedditDL(commands.Cog):
     """v.redd.it downloader"""
-    default_global_settings = {"channels_ignored": [], "guilds_ignored": [], "users_ignored": []}
+    default_global_settings = {"channels_ignored": [],
+                               "guilds_ignored": [], "users_ignored": []}
+
     def __init__(self, bot):
         """set it up"""
         super().__init__()
         self.bot = bot
-        self.reddit = praw.Reddit("Hoobot", user_agent="discord:hoobot:1.0 (by u/owldyn)")
+        self.reddit = praw.Reddit(
+            "Hoobot", user_agent="discord:hoobot:1.0 (by u/owldyn)")
         self.conf = Config.get_conf(self, identifier=26400735)
         self.conf.register_global(**self.default_global_settings)
 
     async def file_size(self, fname):
         """check filesize"""
         statinfo = os.stat(fname)
-        return statinfo.st_size    
+        return statinfo.st_size
+
     async def ydl_download(self, filename, url):
         ydl_opts = {
             'outtmpl': filename
@@ -41,15 +46,19 @@ class VRedditDL(commands.Cog):
     async def download_and_check_audio(self, ctx, audio, fname, tmpfname, url):
         if audio == "yes":
             await self.ydl_download(fname, url)
-            audiocheckraw = subprocess.run(['ffmpeg', '-hide_banner', '-i', fname, '-af', 'volumedetect', '-vn', '-f', 'null', '-', '2>&1'], capture_output=True)
-            audiocheck = audiocheckraw.stderr.decode("utf-8")[0:len(audiocheckraw.stderr)-1]
+            audiocheckraw = subprocess.run(['ffmpeg', '-hide_banner', '-i', fname, '-af',
+                                           'volumedetect', '-vn', '-f', 'null', '-', '2>&1'], capture_output=True)
+            audiocheck = audiocheckraw.stderr.decode(
+                "utf-8")[0:len(audiocheckraw.stderr)-1]
             if "does not contain any stream" in audiocheck and "mean_volume:" not in audiocheck:
                 os.rename(fname, tmpfname)
-                subprocess.run(['ffmpeg', '-i', tmpfname, '-f', 'lavfi', '-i', 'anullsrc=channel_layout=stereo:sample_rate=44100', '-c:v', 'copy', '-c:a', 'aac', '-map', '0:v', '-map', '1:a', '-shortest', fname])
+                subprocess.run(['ffmpeg', '-i', tmpfname, '-f', 'lavfi', '-i', 'anullsrc=channel_layout=stereo:sample_rate=44100',
+                               '-c:v', 'copy', '-c:a', 'aac', '-map', '0:v', '-map', '1:a', '-shortest', fname])
                 os.remove(tmpfname)
         else:
             await self.ydl_download(tmpfname, url)
-            subprocess.run(['ffmpeg', '-i', tmpfname, '-f', 'lavfi', '-i', 'anullsrc=channel_layout=stereo:sample_rate=44100', '-c:v', 'copy', '-c:a', 'aac', '-map', '0:v', '-map', '1:a', '-shortest', fname])
+            subprocess.run(['ffmpeg', '-i', tmpfname, '-f', 'lavfi', '-i', 'anullsrc=channel_layout=stereo:sample_rate=44100',
+                           '-c:v', 'copy', '-c:a', 'aac', '-map', '0:v', '-map', '1:a', '-shortest', fname])
             os.remove(tmpfname)
 
     async def download_and_send(self, ctx, title, audio, url):
@@ -70,7 +79,8 @@ class VRedditDL(commands.Cog):
             os.remove(fname)
         else:
             shrink: discord.Message = await ctx.send("File is more than 8mb... attempting to shrink.")
-            subprocess.run(['ffmpeg', '-i', fname, '-crf', '24', '-vf', 'scale=ceil(iw/4)*2:ceil(ih/4)*2', '-c:a', 'copy', fname2])                   
+            subprocess.run(['ffmpeg', '-i', fname, '-crf', '24', '-vf',
+                           'scale=ceil(iw/4)*2:ceil(ih/4)*2', '-c:a', 'copy', fname2])
             fs2 = os.stat(fname2).st_size
             if fs2 < MAX_FS:
                 with io.open(fname2, "rb") as stream:
@@ -80,7 +90,8 @@ class VRedditDL(commands.Cog):
                 await shrink.delete()
             else:
                 await shrink.edit(content="File is still bigger than 8mb.. attempting extra shrinkage.")
-                subprocess.run(['ffmpeg', '-i', fname2, '-preset', 'veryfast', '-crf', '28', '-c:a', 'copy', fname3])
+                subprocess.run(['ffmpeg', '-i', fname2, '-preset',
+                               'veryfast', '-crf', '28', '-c:a', 'copy', fname3])
                 fs3 = os.stat(fname3).st_size
                 if fs3 < MAX_FS:
                     with io.open(fname3, "rb") as stream:
@@ -91,8 +102,10 @@ class VRedditDL(commands.Cog):
                     await shrink.delete()
                 else:
                     await shrink.edit(content="File is still bigger than 8mb.. attempting extra shrinkage. (quality may be very bad on long videos)")
-                    file_string_raw = subprocess.run(['ffmpeg', '-hide_banner', '-i', fname], capture_output=True)
-                    file_string = file_string_raw.stderr.decode("utf-8")[0:len(file_string_raw.stderr)-1]
+                    file_string_raw = subprocess.run(
+                        ['ffmpeg', '-hide_banner', '-i', fname], capture_output=True)
+                    file_string = file_string_raw.stderr.decode(
+                        "utf-8")[0:len(file_string_raw.stderr)-1]
                     bitrate = await self.calc_bitrate(file_string, MAX_FS)
                     if bitrate < 0:
                         await ctx.send(content="Video was too long, could not shrink enough.")
@@ -102,18 +115,21 @@ class VRedditDL(commands.Cog):
                         await shrink.delete()
                     else:
                         os.remove(fname3)
-                        subprocess.run(['ffmpeg', '-y', '-i', fname2, '-b:v',  f'{bitrate}k', '-maxrate', f'{bitrate}k', '-b:a', '128k', fname3])
+                        subprocess.run(['ffmpeg', '-y', '-i', fname2, '-b:v',
+                                       f'{bitrate}k', '-maxrate', f'{bitrate}k', '-b:a', '128k', fname3])
                         with io.open(fname3, "rb") as stream:
                             await ctx.send(content=f'{titlestring} (Hoobot note: Quality may be (very) bad. click link if needed)', file=discord.File(stream, filename="{}.mp4".format(title)))
                         os.remove(fname)
                         os.remove(fname2)
                         os.remove(fname3)
                         await shrink.delete()
-    
+
     async def calc_bitrate(self, file_string, filesize):
-        audio_size = 150 * 1024 # Rounded up a little to account for variation
-        raw_duration_regex = re.search(r'Duration: \d\d:\d\d:\d\d.\d\d', file_string)
-        raw_duration_regex = re.search(r'\d\d:\d\d:\d\d', raw_duration_regex.group(0))
+        audio_size = 150 * 1024  # Rounded up a little to account for variation
+        raw_duration_regex = re.search(
+            r'Duration: \d\d:\d\d:\d\d.\d\d', file_string)
+        raw_duration_regex = re.search(
+            r'\d\d:\d\d:\d\d', raw_duration_regex.group(0))
         duration_array = raw_duration_regex.group(0).split(":")
         duration = int(duration_array[0]) * 60 * 60
         duration += int(duration_array[1]) * 60
@@ -128,7 +144,7 @@ class VRedditDL(commands.Cog):
         async with ctx.typing():
             if url[0] == '<':
                 url = url[1:len(url)-1]
-                
+
             fname = '/tmp/{}.mp4'.format(ctx.message.id)
 
             if url.find("v.redd.it") >= 0:
@@ -136,51 +152,56 @@ class VRedditDL(commands.Cog):
                 #fs = os.stat(fname).st_size
                 fs = await self.file_size(fname)
                 if fs < 8388119:
-                    stream=io.open(fname, "rb")
+                    stream = io.open(fname, "rb")
                     await ctx.send(content="", file=discord.File(stream, filename=f"vid.mp4"))
                     os.remove(fname)
                 else:
-                    tmp= url.index("t/")
+                    tmp = url.index("t/")
                     fname2 = url[tmp+2:]
-                    WEB_SERVER_FOLDER = "/mnt/NAS/webshare/redditlinks/" #TODO this doesn't work as a global how I was doing it and can't be bothered to figure it out atm
-                    subprocess.run(['cp', fname, f'{WEB_SERVER_FOLDER}{fname2}.mp4'])
+                    # TODO this doesn't work as a global how I was doing it and can't be bothered to figure it out atm
+                    WEB_SERVER_FOLDER = "/mnt/NAS/webshare/redditlinks/"
+                    subprocess.run(
+                        ['cp', fname, f'{WEB_SERVER_FOLDER}{fname2}.mp4'])
                     await ctx.send("File was too large. Link: https://owldyn.net/share/redditlinks/{}.mp4".format(fname2))
                     os.remove(fname)
             elif url.find("reddit.com") >= 0:
                 subprocess.run(['youtube-dl', url, '-o', fname])
-                titleraw = subprocess.run(['youtube-dl', '--get-title', url], capture_output=True)
-                title = titleraw.stdout.decode("utf-8")[0:len(titleraw.stdout)-1]
-                
+                titleraw = subprocess.run(
+                    ['youtube-dl', '--get-title', url], capture_output=True)
+                title = titleraw.stdout.decode(
+                    "utf-8")[0:len(titleraw.stdout)-1]
+
                 #fs = os.stat(fname).st_size
                 fs = await self.file_size(fname)
                 if fs < 8388119:
-                    stream=io.open(fname, "rb")
+                    stream = io.open(fname, "rb")
                     await ctx.send(content="Title: {}".format(title), file=discord.File(stream, filename="{}.mp4".format(title)))
                     os.remove(fname)
                 else:
                     WEB_SERVER_FOLDER = "/mnt/NAS/webshare/redditlinks/"
-                    subprocess.run(['cp', fname, f'{WEB_SERVER_FOLDER}{title}.mp4'])
+                    subprocess.run(
+                        ['cp', fname, f'{WEB_SERVER_FOLDER}{title}.mp4'])
                     title = title.replace(' ', '%20')
                     await ctx.send("File was too large. Link: https://owldyn.net/share/redditlinks/{}.mp4".format(title))
                     os.remove(fname)
             else:
                 await ctx.send("{} is not a valid v.redd.it link.".format(url))
-        
+
     @commands.command()
     async def vredditlink(self, ctx, url, audio="yes", title="UNSET"):
         """Downloads the v.redd.it video and sends it. If it is too large, attempts to shrink it."""
         async with ctx.typing():
             if url[0] == '<':
                 url = url[1:len(url)-1]
-            else: 
+            else:
                 try:
                     await ctx.message.edit(suppress=True)
                 except:
                     pass
-            
+
             if "v.redd.it" in url:
                 url = req.get(url).url
-            
+
             if "reddit.com" in url:
                 if title == "UNSET":
                     id = self.get_submission_id(url)
@@ -198,7 +219,7 @@ class VRedditDL(commands.Cog):
         async with ctx.typing():
             if url[0] == '<':
                 url = url[1:len(url)-1]
-            else: 
+            else:
                 try:
                     await ctx.message.edit(suppress=True)
                 except:
@@ -211,12 +232,12 @@ class VRedditDL(commands.Cog):
         async with ctx.typing():
             if url[0] == '<':
                 url = url[1:len(url)-1]
-            else: 
+            else:
                 try:
                     await ctx.message.edit(suppress=True)
                 except:
                     pass
-            
+
             tmpfname = f'/tmp/tmp{ctx.message.id}.mp4'
             fname = '/tmp/{}.mp4'.format(ctx.message.id)
             fname2 = '/tmp/{}2.mp4'.format(ctx.message.id)
@@ -224,42 +245,51 @@ class VRedditDL(commands.Cog):
 
             if audio == "yes":
                 subprocess.run(['youtube-dl', url, '-o', fname])
-                audiocheckraw = subprocess.run(['ffmpeg', '-hide_banner', '-i', fname, '-af', 'volumedetect', '-vn', '-f', 'null', '-', '2>&1'], capture_output=True)
-                audiocheck = audiocheckraw.stderr.decode("utf-8")[0:len(audiocheckraw.stderr)-1]
+                audiocheckraw = subprocess.run(
+                    ['ffmpeg', '-hide_banner', '-i', fname, '-af', 'volumedetect', '-vn', '-f', 'null', '-', '2>&1'], capture_output=True)
+                audiocheck = audiocheckraw.stderr.decode(
+                    "utf-8")[0:len(audiocheckraw.stderr)-1]
                 if "does not contain any stream" in audiocheck and "mean_volume:" not in audiocheck:
                     os.rename(fname, tmpfname)
-                    subprocess.run(['ffmpeg', '-i', tmpfname, '-f', 'lavfi', '-i', 'anullsrc=channel_layout=stereo:sample_rate=44100', '-c:v', 'copy', '-c:a', 'aac', '-map', '0:v', '-map', '1:a', '-shortest', fname]) 
+                    subprocess.run(['ffmpeg', '-i', tmpfname, '-f', 'lavfi', '-i', 'anullsrc=channel_layout=stereo:sample_rate=44100',
+                                   '-c:v', 'copy', '-c:a', 'aac', '-map', '0:v', '-map', '1:a', '-shortest', fname])
                     os.remove(tmpfname)
-            else:                
-                subprocess.run(['youtube-dl', '-f', 'bestvideo', url, '-o', tmpfname])
-                subprocess.run(['ffmpeg', '-i', tmpfname, '-f', 'lavfi', '-i', 'anullsrc=channel_layout=stereo:sample_rate=44100', '-c:v', 'copy', '-c:a', 'aac', '-map', '0:v', '-map', '1:a', '-shortest', fname]) 
+            else:
+                subprocess.run(
+                    ['youtube-dl', '-f', 'bestvideo', url, '-o', tmpfname])
+                subprocess.run(['ffmpeg', '-i', tmpfname, '-f', 'lavfi', '-i', 'anullsrc=channel_layout=stereo:sample_rate=44100',
+                               '-c:v', 'copy', '-c:a', 'aac', '-map', '0:v', '-map', '1:a', '-shortest', fname])
                 os.remove(tmpfname)
-            
+
             if url.find("gfycat.com") >= 0:
-                titleraw = subprocess.run(['youtube-dl', '--get-title', redditlink], capture_output=True)
-                title = titleraw.stdout.decode("utf-8")[0:len(titleraw.stdout)-1]
+                titleraw = subprocess.run(
+                    ['youtube-dl', '--get-title', redditlink], capture_output=True)
+                title = titleraw.stdout.decode(
+                    "utf-8")[0:len(titleraw.stdout)-1]
 
                 fs = os.stat(fname).st_size
                 if fs < 8388119:
-                    stream=io.open(fname, "rb")
+                    stream = io.open(fname, "rb")
                     await ctx.send(content="Title: {}".format(title), file=discord.File(stream, filename="{}.mp4".format(title)))
                     os.remove(fname)
                 else:
                     shrink: discord.Message = await ctx.send("File is more than 8mb... attempting to shrink.")
-                    subprocess.run(['ffmpeg', '-i', fname, '-crf', '24', '-vf', 'scale=ceil(iw/4)*2:ceil(ih/4)*2,fps=24', '-c:a', 'copy', fname2])                   
+                    subprocess.run(['ffmpeg', '-i', fname, '-crf', '24', '-vf',
+                                   'scale=ceil(iw/4)*2:ceil(ih/4)*2,fps=24', '-c:a', 'copy', fname2])
                     fs2 = os.stat(fname2).st_size
                     if fs2 < 8388119:
-                        stream=io.open(fname2, "rb")
+                        stream = io.open(fname2, "rb")
                         await ctx.send(content="Title: {}".format(title), file=discord.File(stream, filename="{}.mp4".format(title)))
                         os.remove(fname)
                         os.remove(fname2)
                         await shrink.delete()
                     else:
                         await shrink.edit(content="File is still bigger than 8mb.. attempting maximum shrinkage (may take a while).")
-                        subprocess.run(['ffmpeg', '-i', fname2, '-preset', 'veryslow', '-crf', '32', '-b:a', '96k', fname3])
+                        subprocess.run(
+                            ['ffmpeg', '-i', fname2, '-preset', 'veryslow', '-crf', '32', '-b:a', '96k', fname3])
                         fs3 = os.stat(fname3).st_size
                         if fs3 < 8388119:
-                            stream=io.open(fname3, "rb")
+                            stream = io.open(fname3, "rb")
                             await ctx.send(content="Title: {}".format(title), file=discord.File(stream, filename="{}.mp4".format(title)))
                             await shrink.delete()
                         else:
@@ -270,7 +300,6 @@ class VRedditDL(commands.Cog):
                         os.remove(fname3)
             else:
                 await ctx.send("{} is not a valid gfycat link.".format(url))
-
 
     @commands.command()
     async def tenor(self, ctx):
@@ -291,14 +320,16 @@ class VRedditDL(commands.Cog):
            @return: [submission_id, comment_id] """
         if url[len(url)-1] != '/':
             url = url + '/'
-        submission_id = re.search(r'(http.?://.?.?.?.?reddit.com/r/[^/]*/comment.?/)([^/]*)(/[^/]*/?)(.*)/?', url).group(2)
-        comment_id = re.search(r'(http.?://.?.?.?.?reddit.com/r/[^/]*/comment.?/)([^/]*)(/[^/]*/?)([^/]*)/?', url).group(4)
+        submission_id = re.search(
+            r'(http.?://.?.?.?.?reddit.com/r/[^/]*/comment.?/)([^/]*)(/[^/]*/?)(.*)/?', url).group(2)
+        comment_id = re.search(
+            r'(http.?://.?.?.?.?reddit.com/r/[^/]*/comment.?/)([^/]*)(/[^/]*/?)([^/]*)/?', url).group(4)
         return [submission_id, comment_id]
 
     async def get_submission(self, submission_id):
         """Gets a reddit submission.
            @return: Reddit submission"""
-        try: 
+        try:
             submission = await self.reddit.submission(submission_id, lazy=True)
             await submission.load()
             return submission
@@ -318,7 +349,8 @@ class VRedditDL(commands.Cog):
         embed_title = f'Comment by {comment_info.author.name}'
         embed_description = comment_info.body
         if (len(embed_title + embed_description) < 1950) and (len(embed_title) < 255):
-            embed = discord.Embed(title=embed_title, description=embed_description.replace(">!", "||").replace("!<", "||"))
+            embed = discord.Embed(title=embed_title, description=embed_description.replace(
+                ">!", "||").replace("!<", "||"))
             try:
                 await ctx.send(embed=embed)
                 await ctx.message.edit(suppress=True)
@@ -328,7 +360,7 @@ class VRedditDL(commands.Cog):
             await ctx.send("Comment too long to post (Discord max limit of 2000 characters).")
 
     @commands.command()
-    async def redditlink(self, ctx, url, audio = "yes"):
+    async def redditlink(self, ctx, url, audio="yes"):
         """Grab i.imgur or i.reddit links from a reddit comment page. Also will check for videos if images not found.
         Will also check for self post text and post if small enough, if nothing else is found."""
         async with ctx.typing():
@@ -358,9 +390,10 @@ class VRedditDL(commands.Cog):
             if is_self:
                 if len(selftext) < 1750:
                     if len(title) > 255:
-                        return #TODO make it actually post, but cleanly
+                        return  # TODO make it actually post, but cleanly
                     else:
-                        e = discord.Embed(title=title, description=selftext.replace(">!", "||").replace("!<", "||"))
+                        e = discord.Embed(title=title, description=selftext.replace(
+                            ">!", "||").replace("!<", "||"))
                         try:
                             await ctx.send(embed=e)
                             await ctx.message.edit(suppress=True)
@@ -374,13 +407,19 @@ class VRedditDL(commands.Cog):
                     return
 
             regexlink = []
-            regexlink.append(re.search(r'http.?://v.redd.it/[a-zA-Z0-9]*', str(submission_link)))
-            regexlink.append(re.search(r'http.?://preview.redd.it/[a-zA-Z0-9]*.[pjg][npi][gf]', str(submission_link)))
-            regexlink.append(re.search(r'http.?://i.redd.it/[a-zA-Z0-9]*.[pjg][npi][gf]', str(submission_link)))
-            regexlink.append(re.search(r'http.?://[i]?.?imgur.com/[a-zA-Z0-9]*.?[pjg]?[npi]?[gf]?[v]?', str(submission_link)))   
-            regexlink.append(re.search(r'http.?://gfycat.com/[a-zA-Z0-9]*', str(submission_link)))
-            regexlink.append(re.search(r'http.?://.?.?.?.?reddit.com/gallery/.*', str(submission_link)))
-                   
+            regexlink.append(
+                re.search(r'http.?://v.redd.it/[a-zA-Z0-9]*', str(submission_link)))
+            regexlink.append(re.search(
+                r'http.?://preview.redd.it/[a-zA-Z0-9]*.[pjg][npi][gf]', str(submission_link)))
+            regexlink.append(re.search(
+                r'http.?://i.redd.it/[a-zA-Z0-9]*.[pjg][npi][gf]', str(submission_link)))
+            regexlink.append(re.search(
+                r'http.?://[i]?.?imgur.com/[a-zA-Z0-9]*.?[pjg]?[npi]?[gf]?[v]?', str(submission_link)))
+            regexlink.append(
+                re.search(r'http.?://gfycat.com/[a-zA-Z0-9]*', str(submission_link)))
+            regexlink.append(
+                re.search(r'http.?://.?.?.?.?reddit.com/gallery/.*', str(submission_link)))
+
             imglink = "none"
             for search in regexlink:
                 try:
@@ -420,6 +459,7 @@ class VRedditDL(commands.Cog):
 
             if comment_info:
                 await self.post_comment(ctx, comment_info)
+
     async def sendredditgallery(self, ctx, post_info):
         """posts a gallery in order, only 5 per message or discord won't preview them all"""
         gallery = []
@@ -439,6 +479,7 @@ class VRedditDL(commands.Cog):
                     message += '\n'
             await ctx.send(message)
         await ctx.send(f'Title: {post_info.title}')
+
     @commands.guild_only()
     @commands.group(name="autoredditignore")
     async def autoredditignore(self, ctx):
@@ -500,20 +541,21 @@ class VRedditDL(commands.Cog):
             return
         msg_content = message.content.lower()
         if "reddit" in msg_content and "com" in msg_content:
-            reddit_regex = re.search(r'\|?http.?:\/\/.?.?.?.?reddit.com\/r\/[^\/]*\/comment.?\/[^\/]*\/.*', msg_content)
-            reddit_gallery_regex = re.search(r'(\|?http.?:\/\/.?.?.?.?reddit.com\/gallery\/)([^\/]*)(\/?.*)', msg_content)
-            #https://www.reddit.com/gallery/rfkt87
+            reddit_regex = re.search(
+                r'\|?http.?:\/\/.?.?.?.?reddit.com\/r\/[^\/]*\/comment.?\/[^\/]*\/.*', msg_content)
+            reddit_gallery_regex = re.search(
+                r'(\|?http.?:\/\/.?.?.?.?reddit.com\/gallery\/)([^\/]*)(\/?.*)', msg_content)
+            # https://www.reddit.com/gallery/rfkt87
             ctx = await self.bot.get_context(message)
             if reddit_regex and reddit_regex.group(0)[0] != "|":
-                await self.redditlink(ctx = ctx, url = reddit_regex.group(0))
+                await self.redditlink(ctx=ctx, url=reddit_regex.group(0))
             elif reddit_gallery_regex:
                 async with ctx.typing():
                     post_info = await self.get_submission(reddit_gallery_regex.group(2))
                     await self.sendredditgallery(ctx, post_info)
 
-
     @commands.command()
-    async def redditcomment(self, ctx, url, spoiler = "no"):
+    async def redditcomment(self, ctx, url, spoiler="no"):
         async with ctx.typing():
             if "reddit" not in url:
                 await ctx.send("Not a valid reddit link")
@@ -547,7 +589,7 @@ class VRedditDL(commands.Cog):
                 except:
                     pass
                 return
-    
+
     @commands.command()
     async def redditspoilerself(self, ctx, url):
         async with ctx.typing():
@@ -569,7 +611,7 @@ class VRedditDL(commands.Cog):
                     comment_info = None
                 title = post_info.title
                 is_self = post_info.is_self
-                selftext = "||" +  post_info.selftext + "||"
+                selftext = "||" + post_info.selftext + "||"
             except Exception as ex:
                 await ctx.send("Hoot! Error fetching the reddit submission. Either Reddit is having issues or your link is not what I expect.")
                 await ctx.send(f'Error: {str(ex)}')
@@ -577,7 +619,7 @@ class VRedditDL(commands.Cog):
             if is_self:
                 if len(selftext + title) < 1950:
                     if len(title) > 255:
-                        return #TODO make it actually post, but cleanly
+                        return  # TODO make it actually post, but cleanly
                     else:
                         e = discord.Embed(title=title, description=selftext)
                         try:
