@@ -1,7 +1,7 @@
 import abc
 import logging
 
-from .memory_ydl import SpooledYoutubeDL
+from .libraries.memory_ydl import SpooledYoutubeDL
 import tempfile
 DISCORD_MAX_FILESIZE = 8388119
 
@@ -40,10 +40,30 @@ class AbstractProcessor(abc.ABC):
         """Uses ffmpeg to attempt to shrink the video to fit within Discord's file size limits"""
         raise NotImplementedError()
 
-    def process_url(self, url: str):
-        """Processes the URL given and returns the video file."""
+    def check_audio(self, audio: bool):
+        """Uses ffmpeg to check if the audio should be removed, or remove it if requested
+        
+        Args:
+            audio (bool): Whether to remove the audio
+        """
+        raise NotImplementedError()
+
+    def process_url(self, url: str, audio: bool = False):
+        """Processes the URL given and returns the video file.
+
+        Args:
+            url (str): The url of the video
+            audio (bool, optional): Whether to remove the audio. Defaults to False.
+
+        Raises:
+            self.VideoTooLarge: If the video is too large to reduce to below DISCORD_MAX_SIZE
+
+        Returns:
+            video: a SpooledTemporaryFile of the video
+        """
         self.verify_link(url)
         self.sydl.download_video(url)
+        self.check_audio(audio)
         if self.sydl.file_size < DISCORD_MAX_FILESIZE:
             self.logger.info('File is larger than discord max filesize, attempting shrinkage.')
             if self.attempt_shrink():
