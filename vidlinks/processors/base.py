@@ -1,15 +1,22 @@
 import abc
 import logging
-
-from .libraries.memory_ydl import SpooledYoutubeDL
 import tempfile
+
+from .libraries.ffmpeg import Ffmpeg
+from .libraries.memory_ydl import SpooledYoutubeDL
+
 DISCORD_MAX_FILESIZE = 8388119
+MAX_LENGTH = DISCORD_MAX_FILESIZE / 25600 # 200Kb/s (25.6KB/s) is the minimum size we'll try.
 
 class AbstractProcessor(abc.ABC):
+    """Base processor for all video fetches"""
     def __init__(self) -> None:
         self.logger = logging.getLogger(f"owldyn.vidlinks.processor.{self.__class__.__name__}")
         self.sydl = None
         self.shrinked_file = None
+        self.ffmpeg = Ffmpeg()
+        self._video_info = None
+        self._video_duration = None
 
     def __enter__(self):
         self.sydl = SpooledYoutubeDL()
@@ -27,6 +34,22 @@ class AbstractProcessor(abc.ABC):
     class VideoTooLarge(Exception):
         """Exception to raise when the file can't be shrunk enough."""
 
+    @property
+    def video_info(self):
+        """Video info from ffprobe"""
+        if self._video_info:
+            return self._video_info
+        self._video_info = self.ffmpeg.get_information(self.sydl.downloaded_file)
+        return self._video_info
+
+    @property
+    def video_duration(self):
+        """Video duration from video info"""
+        if self._video_duration:
+            return self._video_duration
+        self._video_duration = self.video_info.get('format', {}).get('duration')
+        return self._video_duration
+
     @abc.abstractmethod
     @property
     def ydl_opts(self):
@@ -36,17 +59,39 @@ class AbstractProcessor(abc.ABC):
     def verify_link(self, url):
         """Verifies the url is valid."""
 
-    def attempt_shrink(self):
-        """Uses ffmpeg to attempt to shrink the video to fit within Discord's file size limits"""
-        raise NotImplementedError()
+    def attempt_shrink(self, recursion_depth: int = 0):
+        """Uses ffmpeg to attempt to shrink the video to fit within Discord's file size limits
+        Recursively reduces the dimensions by half,
+        then uses a higher CRF until the file is below the limit"""
+        if self.video_duration and self.video_duration > MAX_LENGTH:
+            # We're gonna try to shrink it even if we can't get the duration
+            raise self.VideoTooLarge('Video is too long to shrink without extreme quality loss.')
+        if recursion_depth >= 4:
+            raise self.VideoTooLarge(f'Tried to shink a total of {recursion_depth} times but it was still too large!')
 
-    def check_audio(self, audio: bool):
-        """Uses ffmpeg to check if the audio should be removed, or remove it if requested
-        
+        self.ffmpeg.shrink_video(self.sydl.downloaded_file)
+        if self.sydl.file_size > DISCORD_MAX_FILESIZE:
+            self.ffmpeg.lower_quality(self.sydl.downloaded_file)
+            if self.sydl.file_size > DISCORD_MAX_FILESIZE:
+                self.attempt_shrink(recursion_depth+1) # Recurse if too big still
+        return recursion_depth
+
+    def check_audio(self, remove_audio: bool):
+        """Removes audio if requested.
+        Will generate a silent audio track if one doesn't exist,
+        as the Discord client seems to dislike no audio on videos.
+
         Args:
-            audio (bool): Whether to remove the audio
+            remove_audio (bool): Whether to remove the audio
         """
-        raise NotImplementedError()
+        if not remove_audio:
+            file_info = self.ffmpeg.get_information(self.sydl.downloaded_file)
+            has_audio = self.ffmpeg.check_for_audio(file_info)
+            if not has_audio:
+                remove_audio = True
+
+        if remove_audio:
+            self.ffmpeg.replace_audio(self.sydl.downloaded_file)
 
     def process_url(self, url: str, audio: bool = False):
         """Processes the URL given and returns the video file.
@@ -64,9 +109,9 @@ class AbstractProcessor(abc.ABC):
         self.verify_link(url)
         self.sydl.download_video(url)
         self.check_audio(audio)
-        if self.sydl.file_size < DISCORD_MAX_FILESIZE:
+        if self.sydl.file_size > DISCORD_MAX_FILESIZE:
             self.logger.info('File is larger than discord max filesize, attempting shrinkage.')
-            if self.attempt_shrink():
+            if self.attempt_shrink() is not False:
                 return self.shrinked_file
             raise self.VideoTooLarge()
 

@@ -47,7 +47,7 @@ class Ffmpeg:
         command = command.value
         command.extend(args)
         return self._run_process_on_file(command, file)
-    
+
     @staticmethod
     def _replace_file(original_file: tempfile.SpooledTemporaryFile, new_data):
         original_file.seek(0)
@@ -64,10 +64,18 @@ class Ffmpeg:
         # Erase the file and replace it with the new file.
         self._replace_file(file, removed_audio)
 
-    def lower_quality(self, file: tempfile.SpooledTemporaryFile):
+    def shrink_video(self, file: tempfile.SpooledTemporaryFile):
         """Lowers the quality of the video by halving the resolution on both axis."""
         args = ['ffmpeg', '-i', '-', '-crf', '24', '-vf',
                 'scale=ceil(iw/4)*2:ceil(ih/4)*2', '-c:a', 'copy', '-f', 'mp4', '-']
+
+        smaller_video = self.run_ffmpeg_command_on_file(self.Commands.FFMPEG, args, file)
+        self._replace_file(file, smaller_video)
+
+    def lower_quality(self, file: tempfile.SpooledTemporaryFile):
+        """Lowers the quality of the video by using crf 28."""
+        args = ['ffmpeg', '-i', '-', '-preset',
+                'veryfast', '-crf', '28', '-c:a', 'copy', '-f', 'mp4', '-']
 
         smaller_video = self.run_ffmpeg_command_on_file(self.Commands.FFMPEG, args, file)
         self._replace_file(file, smaller_video)
