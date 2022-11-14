@@ -1,6 +1,7 @@
 import abc
 import logging
 import tempfile
+from io import BytesIO
 
 from .libraries.ffmpeg import Ffmpeg
 from .libraries.memory_ydl import SpooledYoutubeDL
@@ -51,11 +52,6 @@ class AbstractProcessor(abc.ABC):
         return self._video_duration
 
     @abc.abstractmethod
-    @property
-    def ydl_opts(self):
-        """Options to pass to yt-dlp"""
-
-    @abc.abstractmethod
     def verify_link(self, url):
         """Verifies the url is valid."""
 
@@ -68,10 +64,12 @@ class AbstractProcessor(abc.ABC):
             raise self.VideoTooLarge('Video is too long to shrink without extreme quality loss.')
         if recursion_depth >= 4:
             raise self.VideoTooLarge(f'Tried to shink a total of {recursion_depth} times but it was still too large!')
-
+        self.logger.debug('file_size before %s = %s', recursion_depth, self.sydl.file_size)
         self.ffmpeg.shrink_video(self.sydl.downloaded_file)
         if self.sydl.file_size > DISCORD_MAX_FILESIZE:
+            self.logger.debug('file_size after1 %s = %s', recursion_depth, self.sydl.file_size)
             self.ffmpeg.lower_quality(self.sydl.downloaded_file)
+            self.logger.debug('file_size after2 %s = %s', recursion_depth, self.sydl.file_size)
             if self.sydl.file_size > DISCORD_MAX_FILESIZE:
                 self.attempt_shrink(recursion_depth+1) # Recurse if too big still
         return recursion_depth
@@ -85,8 +83,7 @@ class AbstractProcessor(abc.ABC):
             remove_audio (bool): Whether to remove the audio
         """
         if not remove_audio:
-            file_info = self.ffmpeg.get_information(self.sydl.downloaded_file)
-            has_audio = self.ffmpeg.check_for_audio(file_info)
+            has_audio = self.ffmpeg.check_for_audio(self.video_info)
             if not has_audio:
                 remove_audio = True
 
@@ -112,7 +109,8 @@ class AbstractProcessor(abc.ABC):
         if self.sydl.file_size > DISCORD_MAX_FILESIZE:
             self.logger.info('File is larger than discord max filesize, attempting shrinkage.')
             if self.attempt_shrink() is not False:
-                return self.shrinked_file
+                self.sydl.downloaded_file.seek(0)
+                return BytesIO(self.sydl.downloaded_file.read())
             raise self.VideoTooLarge()
 
         return self.sydl.downloaded_file
