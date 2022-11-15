@@ -165,7 +165,7 @@ class MessageIndex(commands.Cog):
 
     @commands.Cog.listener("on_message_without_command")
     async def autosave(self, message):
-        if not message.guild.id in await self.config.guilds():
+        if message.guild and not message.guild.id in await self.config.guilds():
             return
         if message.author == self.bot.user:
             return
