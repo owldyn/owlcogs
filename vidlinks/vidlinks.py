@@ -35,4 +35,3 @@ class VidLink(commands.Cog):
             with processors.reddit.RedditProcessor() as reddit:
                 file = reddit.process_url(url)
                 await ctx.send(content="test!", file=discord.File(file, filename="test.mp4"))
-            print('test')
