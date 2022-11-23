@@ -113,4 +113,5 @@ class AbstractProcessor(abc.ABC):
                 return BytesIO(self.sydl.downloaded_file.read())
             raise self.VideoTooLarge()
 
-        return self.sydl.downloaded_file
+        self.sydl.downloaded_file.seek(0)
+        return BytesIO(self.sydl.downloaded_file.read())
