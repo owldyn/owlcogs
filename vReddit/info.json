@@ -2,6 +2,7 @@
     "requirements": [
       "requests",
       "yt-dlp",
-      "youtube-dl"
+      "youtube-dl",
+      "asyncpraw"
     ]
   }
