@@ -78,7 +78,7 @@ class Ffmpeg:
 
     def lower_quality(self, file: tempfile.SpooledTemporaryFile):
         """Lowers the quality of the video by using crf 28."""
-        args = ['ffmpeg', '-i', '-', '-preset',
+        args = ['-i', '-', '-preset',
                 'veryfast', '-crf', '28', '-c:a', 'copy']
 
         smaller_video = self.run_ffmpeg_command_on_file(self.Commands.FFMPEG, args, file)
