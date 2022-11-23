@@ -16,7 +16,7 @@
             "type": "python",
             "request": "launch",
             "module": "redbot",
-            "args": ["HooBot"],
+            "args": ["--dev", "DevHoo"],
             "justMyCode": true
         },
         {
