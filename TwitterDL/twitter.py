@@ -13,7 +13,7 @@ from redbot.core import commands
 class twitter_DL(commands.Cog):
     MAX_FS = 8388119
     def setup_tweepy(self):
-        with open("/home/owldyn/.config/keystwitter.py") as KEYS_FILE:
+        with open("/data/keys/keystwitter.py") as KEYS_FILE:
             lines = KEYS_FILE.readlines()
             consumer_key = lines[0].rstrip()
             consumer_secret = lines[1].rstrip()
