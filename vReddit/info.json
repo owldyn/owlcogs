@@ -1,0 +1,7 @@
+{
+    "requirements": [
+      "requests",
+      "yt-dlp",
+      "youtube-dl"
+    ]
+  }
