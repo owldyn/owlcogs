@@ -2,23 +2,33 @@ import json
 import subprocess
 import tempfile
 from enum import Enum
-
+import logging
 
 class Ffmpeg:
+    def __init__(self) -> None:
+        self.logger = logging.getLogger(f"owldyn.vidlinks.libraries.{self.__class__.__name__}")
+
     ffmpeg_always_args = ['-movflags', 'frag_keyframe+empty_moov', '-bsf:a', 'aac_adtstoasc', '-f', 'mp4', '-']
     @staticmethod
     def _run_process_on_file(command, file):
-        with subprocess.Popen(command, stdin=subprocess.PIPE, stdout=subprocess.PIPE) as process:
-            # Seek the file to prep it for piping
-            file.seek(0)
-            info = process.communicate(input=file.read())
-        return info
+        info = subprocess.run(command, capture_output=True)
+        # with subprocess.Popen(command, stdin=subprocess.PIPE, stdout=subprocess.PIPE) as process:
+        #     # Seek the file to prep it for piping
+        #     file.seek(0)
+        #     info = process.communicate(input=file.read())
+        #     process.wait()
+        return info.stdout
 
     def get_information(self, file: tempfile.SpooledTemporaryFile) -> dict:
         """Gets a json of the information of the file."""
-        args = ['-v', 'quiet', '-print_format', 'json', '-show_format', '-show_streams', '-']
-        json_string = self.run_ffmpeg_command_on_file(self.Commands.FFPROBE, args, file)[0].decode('utf-8')
-        return json.loads(json_string)
+        args = ['-v', 'quiet', '-print_format', 'json', '-show_format', '-show_streams', file.name]
+        json_string = self.run_ffmpeg_command_on_file(self.Commands.FFPROBE, args, file).decode('utf-8')
+        try:
+            return json.loads(json_string)
+        except Exception as exc:
+            args = ['-print_format', 'json', '-show_format', '-show_streams', file.name]
+            self.logger.error(self.run_ffmpeg_command_on_file(self.Commands.FFPROBE, args, file).decode('utf-8'))
+            raise exc
 
     @staticmethod
     def check_for_audio(file_information: dict) -> bool:
@@ -78,7 +88,7 @@ class Ffmpeg:
 
     def lower_quality(self, file: tempfile.SpooledTemporaryFile):
         """Lowers the quality of the video by using crf 28."""
-        args = ['ffmpeg', '-i', '-', '-preset',
+        args = ['-i', '-', '-preset',
                 'veryfast', '-crf', '28', '-c:a', 'copy']
 
         smaller_video = self.run_ffmpeg_command_on_file(self.Commands.FFMPEG, args, file)

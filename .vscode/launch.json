@@ -12,6 +12,14 @@
             "justMyCode": true
         },
         {
+            "name": "redbot",
+            "type": "python",
+            "request": "launch",
+            "module": "redbot",
+            "args": ["HooBot"],
+            "justMyCode": true
+        },
+        {
             "name": "Python: Current File",
             "type": "python",
             "request": "launch",

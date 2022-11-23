@@ -20,14 +20,11 @@ class AbstractProcessor(abc.ABC):
         self._video_duration = None
 
     def __enter__(self):
-        self.sydl = SpooledYoutubeDL()
-        self.shrinked_file = tempfile.SpooledTemporaryFile()
-        self.sydl.__enter__()
+        self.sydl = SpooledYoutubeDL().__enter__()
         return self
 
     def __exit__(self, exc_type, exc_value, traceback):
         self.sydl.__exit__(exc_type, exc_value, traceback)
-        self.shrinked_file.close()
 
     class InvalidURL(Exception):
         """Exception to raise when the url isn't valid."""
@@ -112,5 +109,5 @@ class AbstractProcessor(abc.ABC):
                 self.sydl.downloaded_file.seek(0)
                 return BytesIO(self.sydl.downloaded_file.read())
             raise self.VideoTooLarge()
-
-        return self.sydl.downloaded_file
+        self.sydl.downloaded_file.seek(0)
+        return BytesIO(self.sydl.downloaded_file.read())
