@@ -90,6 +90,10 @@ class AbstractProcessor(abc.ABC):
         if remove_audio:
             self.ffmpeg.replace_audio(self.sydl.downloaded_file)
 
+    def normalize_file(self):
+        """Normalize file for any issues caused by how we use yt-dlp"""
+        self.ffmpeg.normalize_file(self.sydl.downloaded_file)
+
     def process_url(self, url: str, audio: bool = False):
         """Processes the URL given and returns the video file.
 
@@ -113,5 +117,6 @@ class AbstractProcessor(abc.ABC):
                 return BytesIO(self.sydl.downloaded_file.read())
             raise self.VideoTooLarge()
 
+        self.normalize_file()
         self.sydl.downloaded_file.seek(0)
         return BytesIO(self.sydl.downloaded_file.read())

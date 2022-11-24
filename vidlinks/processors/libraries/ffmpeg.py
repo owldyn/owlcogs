@@ -81,5 +81,13 @@ class Ffmpeg:
         args = ['-i', '-', '-preset',
                 'veryfast', '-crf', '28', '-c:a', 'copy']
 
-        smaller_video = self.run_ffmpeg_command_on_file(self.Commands.FFMPEG, args, file)
+        smaller_video = self.run_ffmpeg_command_on_file(self.Commands.FFMPEG, args, file)[0]
         self._replace_file(file, smaller_video)
+
+    def normalize_file(self, file: tempfile.SpooledTemporaryFile):
+        """Runs the file through ffmpeg with copy codecs
+        to fix any issues caused by the way we call yt-dlp."""
+        args = ['-i', '-', '-c:v', 'copy', '-c:a', 'copy']
+
+        normalized_video = self.run_ffmpeg_command_on_file(self.Commands.FFMPEG, args, file)[0]
+        self._replace_file(file, normalized_video)
