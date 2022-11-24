@@ -34,8 +34,8 @@ class Ffmpeg:
 
     class Commands(Enum):
         """The commands to run ffmpeg with"""
-        FFMPEG = ['ffmpeg']
-        FFPROBE = ['ffprobe']
+        FFMPEG = 'ffmpeg'
+        FFPROBE = 'ffprobe'
 
     class FfmpegError(Exception):
         """Errors called in the FFMPEG library"""
@@ -57,7 +57,7 @@ class Ffmpeg:
         Returns:
             tuple: the return from subprocess.popen.communicate
         """
-        commandlist = command.value
+        commandlist = [command.value]
         commandlist.extend(args)
         if command == self.Commands.FFMPEG:
             commandlist.extend(self.ffmpeg_always_args)
