@@ -25,13 +25,11 @@ class AbstractProcessor(abc.ABC):
 
     def __enter__(self):
         self.sydl = SpooledYoutubeDL()
-        self.shrinked_file = tempfile.SpooledTemporaryFile()
         self.sydl.__enter__()
         return self
 
     def __exit__(self, exc_type, exc_value, traceback):
         self.sydl.__exit__(exc_type, exc_value, traceback)
-        self.shrinked_file.close()
 
     class InvalidURL(Exception):
         """Exception to raise when the url isn't valid."""
@@ -106,8 +104,23 @@ class AbstractProcessor(abc.ABC):
         """Normalize file for any issues caused by how we use yt-dlp"""
         self.ffmpeg.normalize_file(self.sydl.downloaded_file)
 
-    def process_url(self, url: str, audio: bool = False):
-        """Processes the URL given and returns the video file.
+    def _generic_video_dl(self, url: str, audio: bool = False, **kwargs):
+        self.sydl.download_video(url)
+        self.normalize_file()
+        self.check_audio(audio)
+        if self.sydl.file_size > DISCORD_MAX_FILESIZE:
+            self.logger.info(
+                'File is larger than discord max filesize, attempting shrinkage.')
+            if self.attempt_shrink() is not False:
+                self.sydl.downloaded_file.seek(0)
+                return BytesIO(self.sydl.downloaded_file.read())
+            raise self.VideoTooLarge() # Fallback just in case? should never hit this though.
+
+        self.sydl.downloaded_file.seek(0)
+        return BytesIO(self.sydl.downloaded_file.read())
+
+    def process_url(self, url: str, audio: bool = False, **kwargs) -> list:
+        """Processes the URL given and returns the processed information.
 
         Args:
             url (str): The url of the video
@@ -119,17 +132,10 @@ class AbstractProcessor(abc.ABC):
         Returns:
             video: a SpooledTemporaryFile of the video
         """
-        self.verify_link(url)
-        self.sydl.download_video(url)
-        self.normalize_file()
-        self.check_audio(audio)
-        if self.sydl.file_size > DISCORD_MAX_FILESIZE:
-            self.logger.info(
-                'File is larger than discord max filesize, attempting shrinkage.')
-            if self.attempt_shrink() is not False:
-                self.sydl.downloaded_file.seek(0)
-                return BytesIO(self.sydl.downloaded_file.read())
-            raise self.VideoTooLarge()
-
-        self.sydl.downloaded_file.seek(0)
-        return BytesIO(self.sydl.downloaded_file.read())
+        # Verify the link is correct for this, and if so, run any processing required.
+        # Will return the result of the processing.
+        processing = self.verify_link(url)
+        returns = {}
+        for return_type, function in processing:
+            returns[return_type] = function(url, audio, **kwargs)
+        return returns
