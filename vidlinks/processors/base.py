@@ -109,6 +109,7 @@ class AbstractProcessor(abc.ABC):
         """
         self.verify_link(url)
         self.sydl.download_video(url)
+        self.normalize_file()
         self.check_audio(audio)
         if self.sydl.file_size > DISCORD_MAX_FILESIZE:
             self.logger.info('File is larger than discord max filesize, attempting shrinkage.')
@@ -117,6 +118,5 @@ class AbstractProcessor(abc.ABC):
                 return BytesIO(self.sydl.downloaded_file.read())
             raise self.VideoTooLarge()
 
-        self.normalize_file()
         self.sydl.downloaded_file.seek(0)
         return BytesIO(self.sydl.downloaded_file.read())
