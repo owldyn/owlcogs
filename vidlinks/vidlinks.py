@@ -14,6 +14,7 @@ import requests as req
 import youtube_dl
 from . import processors
 
+
 class VidLink(commands.Cog):
     """v.redd.it downloader"""
     default_global_settings = {"channels_ignored": [],

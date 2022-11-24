@@ -6,6 +6,7 @@ import tempfile
 class SpooledYoutubeDL:
     """Uses a SpooledTemporaryFile and yt-dlp to fetch 
     and expose a youtube file without downloading it."""
+
     def __init__(self) -> None:
         self.downloaded_file = None
 
@@ -16,7 +17,7 @@ class SpooledYoutubeDL:
     def __exit__(self, exc_type, exc_value, traceback):
         self.downloaded_file.close()
 
-    def download_video(self, url: str, ydl_opts = None):
+    def download_video(self, url: str, ydl_opts=None):
         """Download the file into self.downloaded_file
 
         Args:
@@ -29,7 +30,8 @@ class SpooledYoutubeDL:
         base_command.extend(ydl_opts)
         base_command.extend([url, '-o', '-'])
 
-        download_command = subprocess.run(base_command, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, check=False)
+        download_command = subprocess.run(
+            base_command, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, check=False)
         self.downloaded_file.write(download_command.stdout)
 
     @property
