@@ -29,7 +29,7 @@ class SpooledYoutubeDL:
         base_command.extend(ydl_opts)
         base_command.extend([url, '-o', '-'])
 
-        download_command = subprocess.run(base_command, stdout=subprocess.PIPE, check=False)
+        download_command = subprocess.run(base_command, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, check=False)
         self.downloaded_file.write(download_command.stdout)
 
     @property
