@@ -18,7 +18,10 @@ class Ffmpeg:
         """Gets a json of the information of the file."""
         args = ['-v', 'quiet', '-print_format', 'json', '-show_format', '-show_streams', '-']
         json_string = self.run_ffmpeg_command_on_file(self.Commands.FFPROBE, args, file)[0].decode('utf-8')
-        return json.loads(json_string)
+        try:
+            return json.loads(json_string)
+        except json.JSONDecodeError as exc:
+            raise self.FfmpegError(file) from exc
 
     @staticmethod
     def check_for_audio(file_information: dict) -> bool:
@@ -34,7 +37,15 @@ class Ffmpeg:
         FFMPEG = ['ffmpeg']
         FFPROBE = ['ffprobe']
 
-    def run_ffmpeg_command_on_file(self, command: Commands, 
+    class FfmpegError(Exception):
+        """Errors called in the FFMPEG library"""
+        def __init__(self, file, *args: object) -> None:
+            self.ffmpeg_response = Ffmpeg().run_ffmpeg_command_on_file(
+                Ffmpeg.Commands.FFPROBE, ['-'], file)
+            
+            super().__init__(str(self.ffmpeg_response), *args)
+
+    def run_ffmpeg_command_on_file(self, command: Commands,
                                    args: list, file: tempfile.SpooledTemporaryFile) -> tuple:
         """Runs the command with the given args on the given file.
 
