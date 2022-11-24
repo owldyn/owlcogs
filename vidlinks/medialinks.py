@@ -15,7 +15,7 @@ import youtube_dl
 from . import processors
 
 
-class VidLink(commands.Cog):
+class MediaLinks(commands.Cog):
     """v.redd.it downloader"""
     default_global_settings = {"channels_ignored": [],
                                "guilds_ignored": [], "users_ignored": []}
