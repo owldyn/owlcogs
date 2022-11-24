@@ -130,7 +130,7 @@ class AbstractProcessor(abc.ABC):
             self.VideoTooLarge: If the video is too large to reduce to below DISCORD_MAX_SIZE
 
         Returns:
-            video: a SpooledTemporaryFile of the video
+            dict: all of the returns
         """
         # Verify the link is correct for this, and if so, run any processing required.
         # Will return the result of the processing.
