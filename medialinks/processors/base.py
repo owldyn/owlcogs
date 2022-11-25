@@ -56,7 +56,7 @@ class AbstractProcessor(abc.ABC):
         return self._video_duration
 
     @abc.abstractmethod
-    def verify_link(self, url):
+    def verify_link(self, url, audio, **kwargs):
         """Verifies the url is valid."""
 
     def attempt_shrink(self, recursion_depth: int = 0):
@@ -134,7 +134,7 @@ class AbstractProcessor(abc.ABC):
         """
         # Verify the link is correct for this, and if so, run any processing required.
         # Will return the result of the processing.
-        processing = self.verify_link(url)
+        processing = self.verify_link(url, audio, **kwargs)
         returns = {}
         for return_type, function in processing:
             returns[return_type] = function(url, audio, **kwargs)
