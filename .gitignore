@@ -51,4 +51,4 @@ coverage.xml
 docs/_build/
 
 # Praw keys
-*/praw.ini
+**/praw.ini
