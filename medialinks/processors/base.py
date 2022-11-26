@@ -1,7 +1,8 @@
 import abc
 import logging
-import tempfile
 from io import BytesIO
+
+import discord
 
 from .libraries.ffmpeg import Ffmpeg
 from .libraries.memory_ydl import SpooledYoutubeDL
@@ -139,3 +140,29 @@ class AbstractProcessor(abc.ABC):
         for return_type, function in processing:
             returns[return_type] = function(url, audio, **kwargs)
         return returns
+
+    class MessageBuilder:
+        """Builder for the message kwargs"""
+        def __init__(self, title, description = None, image_url = None, video = None) -> None:
+            self.title = title
+            self.description = description
+            self.image_url = image_url
+            self.video = video
+
+        @property
+        def send_kwargs(self):
+            """Generates the kwargs to send to ctx.send"""
+            output = {}
+            if not self.video:
+                embed_args = {'title': self.title}
+                if self.description:
+                    embed_args['description'] = self.description
+                embed = discord.Embed(**embed_args)
+
+                if self.image_url:
+                    embed.set_image(url=self.image_url)
+                output['embed'] = embed
+            else:
+                output['content'] = self.title
+                output['file'] = discord.File(self.video, filename=f"{self.title}.mp4")
+            return output
