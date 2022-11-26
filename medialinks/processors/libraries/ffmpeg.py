@@ -87,7 +87,7 @@ class Ffmpeg:
     def shrink_video(self, file: tempfile.SpooledTemporaryFile):
         """Lowers the quality of the video by halving the resolution on both axis."""
         args = ['-i', '-', '-crf', '24', '-vf',
-                'scale=ceil(iw/4)*2:ceil(ih/4)*2', '-c:a', 'copy']
+                'scale=ceil(iw/4)*2:ceil(ih/4)*2', '-b:a', '128k']
 
         smaller_video = self.run_ffmpeg_command_on_file(
             self.Commands.FFMPEG, args, file)[0]
@@ -96,7 +96,7 @@ class Ffmpeg:
     def lower_quality(self, file: tempfile.SpooledTemporaryFile):
         """Lowers the quality of the video by using crf 28."""
         args = ['-i', '-', '-preset',
-                'veryfast', '-crf', '28', '-c:a', 'copy']
+                'veryfast', '-crf', '28', '-b:a', '128k']
 
         smaller_video = self.run_ffmpeg_command_on_file(
             self.Commands.FFMPEG, args, file)[0]

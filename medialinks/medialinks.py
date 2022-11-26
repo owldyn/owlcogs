@@ -1,17 +1,19 @@
+import asyncio
+import io
+import os
+import re
+import subprocess
+import time
 from operator import sub
 from typing import DefaultDict
-from asyncpraw import reddit
-from redbot.core import Config, checks, commands
-import asyncio
-import time
-import subprocess
-import os
-import io
-import discord
-import re
+
 import asyncpraw as praw
+import discord
 import requests as req
 import youtube_dl
+from asyncpraw import reddit
+from redbot.core import Config, checks, commands
+
 from . import processors
 
 
@@ -34,5 +36,5 @@ class MediaLinks(commands.Cog):
         """Downloads the vreddit video and links it to webserver if too large"""
         async with ctx.typing():
             with processors.reddit.RedditProcessor() as reddit:
-                file = reddit.process_url(url)
-                await ctx.send(content="test!", file=discord.File(file, filename="test.mp4"))
+                message_builder = reddit.process_url(url).get('post')
+                await ctx.send(**message_builder.send_kwargs)

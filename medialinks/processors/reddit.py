@@ -1,6 +1,6 @@
 import re
 
-import asyncpraw as praw
+import praw
 
 from .base import AbstractProcessor
 
@@ -35,12 +35,12 @@ class RedditProcessor(AbstractProcessor):
             raise self.InvalidURL('URL did not match what I expect from Reddit!')
 
         if short_link:
-            return self._process_short_link()
+            return self._process_short_link(match)
 
         reddit_post = self.reddit.submission(url=url)
         return self.process_post(reddit_post, match)
 
-    def _process_short_link(self):
+    def _process_short_link(self, match):
         """Processes a short reddit link"""
         if match.group(2):
             # Just get the first post, that's usually going to be the right one.
@@ -54,7 +54,7 @@ class RedditProcessor(AbstractProcessor):
 
         # Update the match to the full url.
         match = self.link_regex.match(f'https://reddit.com{reddit_post.permalink}')
-        return self.process_post(reddit_post, match, self.audio)
+        return self.process_post(reddit_post, match)
 
     def process_post(self, reddit_post, match):
         """Processes and returns the info from a post"""

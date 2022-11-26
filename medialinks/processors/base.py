@@ -1,3 +1,5 @@
+
+from typing import Dict
 import abc
 import logging
 from io import BytesIO
@@ -31,6 +33,34 @@ class AbstractProcessor(abc.ABC):
 
     def __exit__(self, exc_type, exc_value, traceback):
         self.sydl.__exit__(exc_type, exc_value, traceback)
+    class MessageBuilder:
+        """Builder for the message kwargs"""
+        def __init__(self, title, description = None, image_url = None, video = None, spoiler = False) -> None:
+            self.title = title
+            self.description = description
+            self.image_url = image_url
+            self.video = video
+            self.spoiler = spoiler
+
+        @property
+        def send_kwargs(self):
+            """Generates the kwargs to send to ctx.send"""
+            output = {}
+            if not self.video:
+                embed_args = {'title': self.title}
+                if self.description:
+                    embed_args['description'] = self.description
+                embed = discord.Embed(**embed_args)
+
+                if self.image_url:
+                    embed.set_image(url=self.image_url)
+                output['embed'] = embed
+            else:
+                embed = discord.Embed(title=self.title)
+                output['embed'] = embed
+                filename = f'SPOILER_{self.title}.mp4' if self.spoiler else f'{self.title}.mp4'
+                output['file'] = discord.File(self.video, filename=filename)
+            return output
 
     class InvalidURL(Exception):
         """Exception to raise when the url isn't valid."""
@@ -64,7 +94,7 @@ class AbstractProcessor(abc.ABC):
         """Uses ffmpeg to attempt to shrink the video to fit within Discord's file size limits
         Recursively reduces the dimensions by half,
         then uses a higher CRF until the file is below the limit"""
-        if self.video_duration and self.video_duration > MAX_LENGTH:
+        if self.video_duration and float(self.video_duration) > MAX_LENGTH:
             # We're gonna try to shrink it even if we can't get the duration
             raise self.VideoTooLarge(
                 'Video is too long to shrink without extreme quality loss.')
@@ -120,7 +150,7 @@ class AbstractProcessor(abc.ABC):
         self.sydl.downloaded_file.seek(0)
         return BytesIO(self.sydl.downloaded_file.read())
 
-    def process_url(self, url: str, audio: bool = False, **kwargs) -> list:
+    def process_url(self, url: str, audio: bool = False, **kwargs) -> Dict[str, MessageBuilder]:
         """Processes the URL given and returns the processed information.
 
         Args:
@@ -133,38 +163,4 @@ class AbstractProcessor(abc.ABC):
         Returns:
             dict: all of the returns
         """
-        # Verify the link is correct for this, and if so, run any processing required.
-        # Will return the result of the processing.
-        processing = self.verify_link(url, audio, **kwargs)
-        returns = {}
-        for return_type, function in processing:
-            returns[return_type] = function(url, audio, **kwargs)
-        return returns
-
-    class MessageBuilder:
-        """Builder for the message kwargs"""
-        def __init__(self, title, description = None, image_url = None, video = None, spoiler = False) -> None:
-            self.title = title
-            self.description = description
-            self.image_url = image_url
-            self.video = video
-            self.spoiler = spoiler
-
-        @property
-        def send_kwargs(self):
-            """Generates the kwargs to send to ctx.send"""
-            output = {}
-            if not self.video:
-                embed_args = {'title': self.title}
-                if self.description:
-                    embed_args['description'] = self.description
-                embed = discord.Embed(**embed_args)
-
-                if self.image_url:
-                    embed.set_image(url=self.image_url)
-                output['embed'] = embed
-            else:
-                output['content'] = self.title
-                filename = f'SPOILER_{self.title}.mp4' if self.spoiler else f'{self.title}.mp4'
-                output['file'] = discord.File(self.video, filename=filename)
-            return output
+        return self.verify_link(url, audio, **kwargs)
