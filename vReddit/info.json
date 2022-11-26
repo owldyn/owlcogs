@@ -3,6 +3,7 @@
       "requests",
       "yt-dlp",
       "youtube-dl",
-      "asyncpraw"
+      "asyncpraw",
+      "praw"
     ]
   }
