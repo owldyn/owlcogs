@@ -143,11 +143,12 @@ class AbstractProcessor(abc.ABC):
 
     class MessageBuilder:
         """Builder for the message kwargs"""
-        def __init__(self, title, description = None, image_url = None, video = None) -> None:
+        def __init__(self, title, description = None, image_url = None, video = None, spoiler = False) -> None:
             self.title = title
             self.description = description
             self.image_url = image_url
             self.video = video
+            self.spoiler = spoiler
 
         @property
         def send_kwargs(self):
@@ -164,5 +165,6 @@ class AbstractProcessor(abc.ABC):
                 output['embed'] = embed
             else:
                 output['content'] = self.title
-                output['file'] = discord.File(self.video, filename=f"{self.title}.mp4")
+                filename = f'SPOILER_{self.title}.mp4' if self.spoiler else f'{self.title}.mp4'
+                output['file'] = discord.File(self.video, filename=filename)
             return output

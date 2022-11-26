@@ -86,7 +86,7 @@ class RedditProcessor(AbstractProcessor):
             title = f'Comment by {comment_info.author.name}'
 
             if (len(title + comment_info.body) < 4096) and (len(title) < 255):
-                return self.MessageBuilder(title=title, description=comment_info.body)
+                return self.MessageBuilder(title=title, description=comment_info.body, spoiler=self.spoiler)
             return self.MessageBuilder(title=title, description=f'Comment is too long to post in discord! [Read it here!](https://reddit.com{comment_info.permalink})')
         return None
 
@@ -100,12 +100,19 @@ class RedditProcessor(AbstractProcessor):
             if not self.spoiler:
                 self_text = self_text.replace(">!", "||").replace("!<", "||")
             else:
-                self_text = f'||{self_text}||'
-            return {'title': title, 'description': self_text, 'comments': comments}
+                self_text = f'||{self_text}||' #TODO move this to message builder
+            return {'post': self.MessageBuilder(title=title, description=self_text), 'comments': comments}
         raise self.InvalidURL('Self post is too long!')
 
     def _process_video(self, reddit_post, match):
-        pass
+        title = reddit_post.title
+        comments = self._process_comments(match)
+        if len(title) > 255:
+            # Just trim it
+            title = title[:254]
+        video = self._generic_video_dl(url=f'https://reddit.com{reddit_post.permalink}', audio=self.audio)
+        return {'post': self.MessageBuilder(title=title, spoiler=self.spoiler, video=video), 'comments': comments}
+
 
     def _process_image(self, reddit_post, match):
         pass
