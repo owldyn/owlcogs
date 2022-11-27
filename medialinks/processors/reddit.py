@@ -69,9 +69,9 @@ class RedditProcessor(AbstractProcessor):
             if ".png" not in imglink and ".jpg" not in imglink and ".gif" not in imglink:
                 imglink = imglink + ".png"
 
+        check_videos = ['v.redd.it', 'gyfcat', 'streamable']
 
-        if ("v.redd.it" in imglink or
-           "gyfcat" in imglink or
+        if (True in [check in imglink for check in check_videos] or
            ("imgur" in imglink and ".gifv" in imglink)):
             return self._process_video(reddit_post, match)
         if "reddit.com/gallery" in imglink:
@@ -101,7 +101,7 @@ class RedditProcessor(AbstractProcessor):
                 self_text = self_text.replace(">!", "||").replace("!<", "||")
             else:
                 self_text = f'||{self_text}||' #TODO move this to message builder
-            return {'post': self.MessageBuilder(title=title, description=self_text), 'comments': comments}
+            return {'post': self.MessageBuilder(title=title, url=self.url, description=self_text), 'comments': comments}
         raise self.InvalidURL('Self post is too long!')
 
     def _process_video(self, reddit_post, match):
@@ -111,11 +111,45 @@ class RedditProcessor(AbstractProcessor):
             # Just trim it
             title = title[:254]
         video = self._generic_video_dl(url=f'https://reddit.com{reddit_post.permalink}', audio=self.audio)
-        return {'post': self.MessageBuilder(title=title, spoiler=self.spoiler, video=video), 'comments': comments}
+        return {'post': self.MessageBuilder(title=title, url=self.url, spoiler=self.spoiler, video=video), 'comments': comments}
 
 
     def _process_image(self, reddit_post, match):
         pass
 
+    def _process_gallery_multiple_embeds(self, reddit_post, match):
+        """posts a gallery in order, This uses multiple embeds which isn't supported in the current version of redbot (3.4)"""
+        title = reddit_post.title
+        comments = self._process_comments(match)
+        gallery = []
+        discord_max_preview = 5
+        ids = [i['media_id'] for i in reddit_post.gallery_data['items']]
+        for id in ids:
+            url = reddit_post.media_metadata[id]['p'][0]['u']
+            url = url.split("?")[0].replace("preview", "i")
+            gallery.append(url)
+        return {'post': self.MessageBuilder(title=title, url=self.url, spoiler=self.spoiler, image_url = gallery), 'comments': comments}
+
     def _process_gallery(self, reddit_post, match):
-        pass
+        """posts a gallery in order, only 5 per message or discord won't preview them all"""
+        title = reddit_post.title
+        comments = self._process_comments(match)
+        gallery = []
+        discord_max_preview = 5
+        ids = [i['media_id'] for i in reddit_post.gallery_data['items']]
+        for id in ids:
+            url = reddit_post.media_metadata[id]['p'][0]['u']
+            url = url.split("?")[0].replace("preview", "i")
+            gallery.append(url)
+        messages = []
+        while len(gallery) > 0:
+            message = ""
+            i = 0
+            while i < discord_max_preview:
+                i += 1
+                if len(gallery) > 0:
+                    message += gallery.pop(0)
+                    message += '\n'
+            messages.append(self.MessageBuilder(spoiler=self.spoiler, content=message))
+        messages.append(self.MessageBuilder(spoiler=self.spoiler, content=title))
+        return { 'post': messages, 'comments': comments}

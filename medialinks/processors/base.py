@@ -35,32 +35,58 @@ class AbstractProcessor(abc.ABC):
         self.sydl.__exit__(exc_type, exc_value, traceback)
     class MessageBuilder:
         """Builder for the message kwargs"""
-        def __init__(self, title, description = None, image_url = None, video = None, spoiler = False) -> None:
+        def __init__(self, title = None, url = None, description = None, image_url = None, video = None, spoiler = False, content = None) -> None:
             self.title = title
             self.description = description
             self.image_url = image_url
             self.video = video
             self.spoiler = spoiler
+            self.url = url
+            self.content = content
 
         @property
         def send_kwargs(self):
             """Generates the kwargs to send to ctx.send"""
             output = {}
-            if not self.video:
-                embed_args = {'title': self.title}
-                if self.description:
-                    embed_args['description'] = self.description
-                embed = discord.Embed(**embed_args)
-
-                if self.image_url:
-                    embed.set_image(url=self.image_url)
-                output['embed'] = embed
-            else:
-                embed = discord.Embed(title=self.title)
-                output['embed'] = embed
-                filename = f'SPOILER_{self.title}.mp4' if self.spoiler else f'{self.title}.mp4'
-                output['file'] = discord.File(self.video, filename=filename)
+            if isinstance(self.image_url, list):
+                self._multi_embed(output)
+            elif self.content is not None:
+                self._plain_message(output)
+            elif not self.video:
+                self._general_embed(output)
+            else: # Should only be videos left at this point.
+                self._video_embed(output)
             return output
+
+        def _plain_message(self, output):
+            if self.spoiler:
+                output['content'] = f'||{self.content}||'
+            else:
+                output['content'] = self.content
+
+        def _multi_embed(self, output):
+            embeds = []
+            for image in self.image_url:
+                embed = discord.Embed(title=self.title, url=self.url)
+                embed.set_image(url=image)
+                embeds.append(embed)
+            output['embeds'] = embeds
+
+        def _video_embed(self, output):
+            embed = discord.Embed(title=self.title)
+            output['embed'] = embed
+            filename = f'SPOILER_{self.title}.mp4' if self.spoiler else f'{self.title}.mp4'
+            output['file'] = discord.File(self.video, filename=filename)
+
+        def _general_embed(self, output):
+            embed_args = {'title': self.title}
+            if self.description:
+                embed_args['description'] = self.description
+            embed = discord.Embed(**embed_args)
+
+            if self.image_url:
+                embed.set_image(url=self.image_url)
+            output['embed'] = embed
 
     class InvalidURL(Exception):
         """Exception to raise when the url isn't valid."""

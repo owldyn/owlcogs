@@ -37,4 +37,8 @@ class MediaLinks(commands.Cog):
         async with ctx.typing():
             with processors.reddit.RedditProcessor() as reddit:
                 message_builder = reddit.process_url(url).get('post')
-                await ctx.send(**message_builder.send_kwargs)
+                if isinstance(message_builder, list):
+                    for message in message_builder:
+                        await ctx.send(**message.send_kwargs)
+                else:
+                    await ctx.send(**message_builder.send_kwargs)
