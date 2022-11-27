@@ -2,7 +2,7 @@ import re
 
 import praw
 
-from .base import AbstractProcessor
+from .base import AbstractProcessor, MessageBuilder
 
 
 class RedditProcessor(AbstractProcessor):
@@ -19,6 +19,15 @@ class RedditProcessor(AbstractProcessor):
         self.url = None
         self.reddit = praw.Reddit(
             "Hoobot", user_agent="discord:hoobot:2.0 (by u/owldyn)")
+
+    class MessageBuilder(MessageBuilder):
+        @staticmethod
+        def prettify_embed(output):
+            if output.get('embed', None):
+                embed = output.get('embed')
+                embed.set_author(name='reddit')
+            
+
     def verify_link(self, url, audio, spoiler = False, **kwargs):
         """Verifies the url is valid."""
         # Check both types of reddit urls.
@@ -53,7 +62,7 @@ class RedditProcessor(AbstractProcessor):
             reddit_post = self.reddit.submission(id=submission_id)
 
         # Update the match to the full url.
-        match = self.link_regex.match(f'https://reddit.com{reddit_post.permalink}')
+        match = self.link_regex.match(self._reddit_link(reddit_post))
         return self.process_post(reddit_post, match)
 
     def process_post(self, reddit_post, match):
@@ -79,6 +88,10 @@ class RedditProcessor(AbstractProcessor):
 
         # Image processing will always be a fallback. Worst case is the preview doesn't work.
         return self._process_image(reddit_post, match)
+
+    @staticmethod
+    def _reddit_link(reddit_post):
+        return f'https://reddit.com{reddit_post.permalink}'
 
     def _process_comments(self, match):
         if match.group(4):
@@ -110,12 +123,13 @@ class RedditProcessor(AbstractProcessor):
         if len(title) > 255:
             # Just trim it
             title = title[:254]
-        video = self._generic_video_dl(url=f'https://reddit.com{reddit_post.permalink}', audio=self.audio)
+        video = self._generic_video_dl(url=self._reddit_link(reddit_post), audio=self.audio)
         return {'post': self.MessageBuilder(title=title, url=self.url, spoiler=self.spoiler, video=video), 'comments': comments}
 
-
     def _process_image(self, reddit_post, match):
-        pass
+        title = reddit_post.title
+        comments = self._process_comments(match)
+        return {'post': self.MessageBuilder(title=title, url=self.url, image_url=reddit_post.url, spoiler=self.spoiler), 'comments': comments}
 
     def _process_gallery_multiple_embeds(self, reddit_post, match):
         """posts a gallery in order, This uses multiple embeds which isn't supported in the current version of redbot (3.4)"""
