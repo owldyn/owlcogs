@@ -13,9 +13,11 @@ DISCORD_MAX_FILESIZE = 8388119
 # 200Kb/s (25.6KB/s) is the minimum size we'll try.
 MAX_LENGTH = DISCORD_MAX_FILESIZE / 25600
 
+
 class MessageBuilder(abc.ABC):
     """Builder for the message kwargs"""
-    def __init__(self, title = None, url = None, description = None, image_url = None, video = None, spoiler = False, content = None) -> None:
+
+    def __init__(self, title=None, url=None, description=None, image_url=None, video=None, spoiler=False, content=None) -> None:
         self.title = title
         self.description = description
         self.image_url = image_url
@@ -24,10 +26,10 @@ class MessageBuilder(abc.ABC):
         self.url = url
         self.content = content
 
+    @staticmethod
     @abc.abstractmethod
     def prettify_embed(output):
         """Prettify the embed (if it exists)"""
-        pass
 
     @property
     def send_kwargs(self):
@@ -39,7 +41,7 @@ class MessageBuilder(abc.ABC):
             self._plain_message(output)
         elif not self.video:
             self._general_embed(output)
-        else: # Should only be videos left at this point.
+        else:  # Should only be videos left at this point.
             self._video_embed(output)
         self.prettify_embed(output)
         return output
@@ -73,6 +75,7 @@ class MessageBuilder(abc.ABC):
         if self.image_url:
             embed.set_image(url=self.image_url)
         output['embed'] = embed
+
 
 class AbstractProcessor(abc.ABC):
     """Base processor for all video fetches"""
@@ -177,7 +180,8 @@ class AbstractProcessor(abc.ABC):
             if self.attempt_shrink() is not False:
                 self.sydl.downloaded_file.seek(0)
                 return BytesIO(self.sydl.downloaded_file.read())
-            raise self.VideoTooLarge() # Fallback just in case? should never hit this though.
+            # Fallback just in case? should never hit this though.
+            raise self.VideoTooLarge()
 
         self.sydl.downloaded_file.seek(0)
         return BytesIO(self.sydl.downloaded_file.read())

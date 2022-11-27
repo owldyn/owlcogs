@@ -7,9 +7,11 @@ from .base import AbstractProcessor, MessageBuilder
 
 class RedditProcessor(AbstractProcessor):
     """processor for reddit"""
-                             # https?://old/www?.reddit.com/r/sub /comments?/postid  /shortname/commentid
-    link_regex = re.compile(r'(http.?://.?.?.?.?reddit.com/r/[^/]*/comment.?/)([^/]*)(/[^/]*/?)([^/]*)?.*')
+    # https?://old/www?.reddit.com/r/sub /comments?/postid  /shortname/commentid
+    link_regex = re.compile(
+        r'(http.?://.?.?.?.?reddit.com/r/[^/]*/comment.?/)([^/]*)(/[^/]*/?)([^/]*)?.*')
     short_reddit_regex = re.compile(r'(http.?://(.?)\.?redd.it/)(.*)?')
+
     def __init__(self) -> None:
         super().__init__()
         self.spoiler = None
@@ -26,9 +28,8 @@ class RedditProcessor(AbstractProcessor):
             if output.get('embed', None):
                 embed = output.get('embed')
                 embed.set_author(name='reddit')
-            
 
-    def verify_link(self, url, audio, spoiler = False, **kwargs):
+    def verify_link(self, url, audio, spoiler=False, **kwargs):
         """Verifies the url is valid."""
         # Check both types of reddit urls.
         self.spoiler = spoiler
@@ -41,7 +42,8 @@ class RedditProcessor(AbstractProcessor):
             short_link = True
 
         if not match:
-            raise self.InvalidURL('URL did not match what I expect from Reddit!')
+            raise self.InvalidURL(
+                'URL did not match what I expect from Reddit!')
 
         if short_link:
             return self._process_short_link(match)
@@ -58,7 +60,8 @@ class RedditProcessor(AbstractProcessor):
         else:
             submission_id = match.group(3)
             if not submission_id:
-                raise self.InvalidURL('Could not fetch reddit post for given url!')
+                raise self.InvalidURL(
+                    'Could not fetch reddit post for given url!')
             reddit_post = self.reddit.submission(id=submission_id)
 
         # Update the match to the full url.
@@ -113,7 +116,8 @@ class RedditProcessor(AbstractProcessor):
             if not self.spoiler:
                 self_text = self_text.replace(">!", "||").replace("!<", "||")
             else:
-                self_text = f'||{self_text}||' #TODO move this to message builder
+                # TODO move this to message builder
+                self_text = f'||{self_text}||'
             return {'post': self.MessageBuilder(title=title, url=self.url, description=self_text), 'comments': comments}
         raise self.InvalidURL('Self post is too long!')
 
@@ -123,7 +127,8 @@ class RedditProcessor(AbstractProcessor):
         if len(title) > 255:
             # Just trim it
             title = title[:254]
-        video = self._generic_video_dl(url=self._reddit_link(reddit_post), audio=self.audio)
+        video = self._generic_video_dl(
+            url=self._reddit_link(reddit_post), audio=self.audio)
         return {'post': self.MessageBuilder(title=title, url=self.url, spoiler=self.spoiler, video=video), 'comments': comments}
 
     def _process_image(self, reddit_post, match):
@@ -142,7 +147,7 @@ class RedditProcessor(AbstractProcessor):
             url = reddit_post.media_metadata[id]['p'][0]['u']
             url = url.split("?")[0].replace("preview", "i")
             gallery.append(url)
-        return {'post': self.MessageBuilder(title=title, url=self.url, spoiler=self.spoiler, image_url = gallery), 'comments': comments}
+        return {'post': self.MessageBuilder(title=title, url=self.url, spoiler=self.spoiler, image_url=gallery), 'comments': comments}
 
     def _process_gallery(self, reddit_post, match):
         """posts a gallery in order, only 5 per message or discord won't preview them all"""
@@ -164,6 +169,8 @@ class RedditProcessor(AbstractProcessor):
                 if len(gallery) > 0:
                     message += gallery.pop(0)
                     message += '\n'
-            messages.append(self.MessageBuilder(spoiler=self.spoiler, content=message))
-        messages.append(self.MessageBuilder(spoiler=self.spoiler, content=title))
-        return { 'post': messages, 'comments': comments}
+            messages.append(self.MessageBuilder(
+                spoiler=self.spoiler, content=message))
+        messages.append(self.MessageBuilder(
+            spoiler=self.spoiler, content=title))
+        return {'post': messages, 'comments': comments}
