@@ -17,7 +17,7 @@ MAX_LENGTH = DISCORD_MAX_FILESIZE / 25600
 class MessageBuilder(abc.ABC):
     """Builder for the message kwargs"""
 
-    def __init__(self, title=None, url=None, description=None, image_url=None, video=None, spoiler=False, content=None) -> None:
+    def __init__(self, title=None, url=None, description=None, image_url=None, video=None, spoiler=False, content=None, footer=None) -> None:
         self.title = title
         self.description = description
         self.image_url = image_url
@@ -25,6 +25,7 @@ class MessageBuilder(abc.ABC):
         self.spoiler = spoiler
         self.url = url
         self.content = content
+        self.footer = footer
 
     @staticmethod
     @abc.abstractmethod
@@ -44,7 +45,12 @@ class MessageBuilder(abc.ABC):
         else:  # Should only be videos left at this point.
             self._video_embed(output)
         self.prettify_embed(output)
+        self._add_footer(output)
         return output
+
+    def _add_footer(self, output):
+        if output.get('embed'):
+            output['embed'].set_footer(text=self.footer)
 
     def _plain_message(self, output):
         if self.spoiler:

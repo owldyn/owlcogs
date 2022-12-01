@@ -21,6 +21,7 @@ class RedditProcessor(AbstractProcessor):
         self.url = None
         self.reddit = praw.Reddit(
             "Hoobot", user_agent="discord:hoobot:2.0 (by u/owldyn)")
+        self.footer = None
 
     class MessageBuilder(MessageBuilder):
         @staticmethod
@@ -56,7 +57,8 @@ class RedditProcessor(AbstractProcessor):
         if match.group(2):
             # Just get the first post, that's usually going to be the right one.
             # If it's not, well they shoulda linked the reddit page not the media for it.
-            reddit_post = self.reddit.submission(url=self.url)
+            reddit_post = next(self.reddit.info(url=self.url))
+            self.footer = 'This post may not be the one you expect... Send the reddit post url for more accuracy!'
         else:
             submission_id = match.group(3)
             if not submission_id:
@@ -118,7 +120,7 @@ class RedditProcessor(AbstractProcessor):
             else:
                 # TODO move this to message builder
                 self_text = f'||{self_text}||'
-            return {'post': self.MessageBuilder(title=title, url=self.url, description=self_text), 'comments': comments}
+            return {'post': self.MessageBuilder(title=title, url=self.url, description=self_text, footer=self.footer), 'comments': comments}
         raise self.InvalidURL('Self post is too long!')
 
     def _process_video(self, reddit_post, match):
@@ -129,12 +131,12 @@ class RedditProcessor(AbstractProcessor):
             title = title[:254]
         video = self._generic_video_dl(
             url=self._reddit_link(reddit_post), audio=self.audio)
-        return {'post': self.MessageBuilder(title=title, url=self.url, spoiler=self.spoiler, video=video), 'comments': comments}
+        return {'post': self.MessageBuilder(title=title, url=self.url, spoiler=self.spoiler, video=video, footer=self.footer), 'comments': comments}
 
     def _process_image(self, reddit_post, match):
         title = reddit_post.title
         comments = self._process_comments(match)
-        return {'post': self.MessageBuilder(title=title, url=self.url, image_url=reddit_post.url, spoiler=self.spoiler), 'comments': comments}
+        return {'post': self.MessageBuilder(title=title, url=self.url, image_url=reddit_post.url, spoiler=self.spoiler, footer=self.footer), 'comments': comments}
 
     def _process_gallery_multiple_embeds(self, reddit_post, match):
         """posts a gallery in order, This uses multiple embeds which isn't supported in the current version of redbot (3.4)"""
@@ -147,7 +149,7 @@ class RedditProcessor(AbstractProcessor):
             url = reddit_post.media_metadata[id]['p'][0]['u']
             url = url.split("?")[0].replace("preview", "i")
             gallery.append(url)
-        return {'post': self.MessageBuilder(title=title, url=self.url, spoiler=self.spoiler, image_url=gallery), 'comments': comments}
+        return {'post': self.MessageBuilder(title=title, url=self.url, spoiler=self.spoiler, image_url=gallery, footer=self.footer), 'comments': comments}
 
     def _process_gallery(self, reddit_post, match):
         """posts a gallery in order, only 5 per message or discord won't preview them all"""
@@ -170,7 +172,7 @@ class RedditProcessor(AbstractProcessor):
                     message += gallery.pop(0)
                     message += '\n'
             messages.append(self.MessageBuilder(
-                spoiler=self.spoiler, content=message))
+                spoiler=self.spoiler, content=message, footer=self.footer))
         messages.append(self.MessageBuilder(
-            spoiler=self.spoiler, content=title))
+            spoiler=self.spoiler, content=title, footer=self.footer))
         return {'post': messages, 'comments': comments}
