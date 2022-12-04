@@ -57,10 +57,16 @@ class OwlUtils(commands.Cog):
             return
         msg_content = message.content.lower()
         split_message = msg_content.split(' ')
-        if (re.match(r"what['s ]?(s|is)", split_message[0])
-            and split_message[1].isdigit()
-            and msg_content):
-            ctx = await self.bot.get_context(message)
-            total = Calculator().calculate(' '.join(split_message[1:]))
-            if total is not None:
-                await ctx.send(total)
+        if (msg_content
+            and re.match(r"what['s ]?", split_message[0])):
+            try:
+                ctx = await self.bot.get_context(message)
+                if "what" in split_message[0] and 'is' in split_message[1]:
+                    calculate_string = ' '.join(split_message[2:])
+                else:
+                    calculate_string = ' '.join(split_message[1:])
+                total = Calculator().calculate(' '.join(calculate_string))
+                if total is not None:
+                    await ctx.send(total)
+            except IndexError:
+                pass
