@@ -1,7 +1,8 @@
-import discord
+import re
+
 import requests
 from redbot.core import Config, checks, commands
-
+from .calculate import Calculator
 
 class OwlUtils(commands.Cog):
 
@@ -9,6 +10,7 @@ class OwlUtils(commands.Cog):
 
     def __init__(self, bot):
         self.bot = bot
+
     @commands.is_owner()
     @commands.command()
     async def portainer(self, ctx, hostname, port):
@@ -48,3 +50,17 @@ class OwlUtils(commands.Cog):
     external: true```
         """
         await ctx.send(config)
+
+    @commands.Cog.listener("on_message_without_command")
+    async def calculate(self, message):
+        if message.author.bot:
+            return
+        msg_content = message.content.lower()
+        split_message = msg_content.split(' ')
+        if (re.match(r"what['s ]?(s|is)", split_message[0])
+            and split_message[1].isdigit()
+            and msg_content):
+            ctx = await self.bot.get_context(message)
+            total = Calculator().calculate(' '.join(split_message[1:]))
+            if total is not None:
+                await ctx.send(total)
