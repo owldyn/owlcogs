@@ -32,7 +32,8 @@ class OwlUtils(commands.Cog):
         - "traefik.http.services.{hostname}.loadbalancer.server.port={port}"
         - "traefik.http.routers.{hostname}-secure.middlewares=secured@file"
         - "traefik.docker.network=proxy"
-        #- "traefik.http.routers.{hostname}-secure.middlewares=authelia@docker" # Uncomment for authelia
+        #- "traefik.http.routers.{hostname}-secure.middlewares=authelia@docker" # Uncomment for authelia```"""
+        config2 = """```
         # Remove below for local only
         - "traefik.http.routers.{hostname}-external.entrypoints=http"
         - "traefik.http.routers.{hostname}-external.rule=Host(`{hostname}.owldyn.net`)"
@@ -50,6 +51,7 @@ class OwlUtils(commands.Cog):
     external: true```
         """
         await ctx.send(config)
+        await ctx.send(config2)
 
     @commands.Cog.listener("on_message_without_command")
     async def calculate(self, message):
