@@ -49,7 +49,7 @@ class MessageBuilder(abc.ABC):
         return output
 
     def _add_footer(self, output):
-        if output.get('embed'):
+        if output.get('embed') and self.footer:
             output['embed'].set_footer(text=self.footer)
 
     def _plain_message(self, output):
@@ -85,6 +85,11 @@ class MessageBuilder(abc.ABC):
 
 class AbstractProcessor(abc.ABC):
     """Base processor for all video fetches"""
+    @property
+    @abc.abstractmethod
+    def regex_checks(self):
+        """A list of compiled regex"""
+        pass
 
     def __init__(self) -> None:
         self.logger = logging.getLogger(
@@ -192,7 +197,7 @@ class AbstractProcessor(abc.ABC):
         self.sydl.downloaded_file.seek(0)
         return BytesIO(self.sydl.downloaded_file.read())
 
-    def process_url(self, url: str, audio: bool = False, **kwargs) -> Dict[str, MessageBuilder]:
+    async def process_url(self, url: str, audio: bool = False, **kwargs) -> Dict[str, MessageBuilder]:
         """Processes the URL given and returns the processed information.
 
         Args:
