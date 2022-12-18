@@ -132,7 +132,7 @@ class MediaLinks(commands.Cog):
                 with processor() as proc:
                     message_dict = await proc.process_url(match)
                     messages = message_dict.get('post')
-                    comment = message_dict.get('comment', None)
+                    comment = message_dict.get('comments', None)
                     if isinstance(messages, list):
                         for message_builder in messages:
                             await ctx.send(**message_builder.send_kwargs)
