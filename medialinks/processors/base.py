@@ -27,9 +27,8 @@ class MessageBuilder(abc.ABC):
         self.content = content
         self.footer = footer
 
-    @staticmethod
     @abc.abstractmethod
-    def prettify_embed(output):
+    def prettify_embed(self, output):
         """Prettify the embed (if it exists)"""
 
     @property
