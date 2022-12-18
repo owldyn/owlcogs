@@ -146,18 +146,21 @@ class MediaLinks(commands.Cog):
                     if comment:
                         messages_to_send.append(comment)
 
-                    for message in messages_to_send:
+                    sender = ctx.reply # only want to reply with one message
+                    for index, message in enumerate(messages_to_send):
+                        if index > 0:
+                            sender = ctx.send
                         if spoiler and message.type == message.MessageTypes.IMAGE_EMBED:
                             if not message.image_url: # Can't do the hack here
-                                await ctx.send(**message.send_kwargs)
+                                await sender(**message.send_kwargs)
                             else:
-                                spoiler_setup = await ctx.reply(f'||{message.image_url}||', mention_author=False)
+                                spoiler_setup = await sender(f'||{message.image_url}||', mention_author=False)
                                 await spoiler_setup.edit(**message.send_kwargs)
                         else:
                             file = None
                             if message.send_kwargs.get('file') and message.send_kwargs.get('embed'):
                                 file = message.send_kwargs.pop('file')
-                            await ctx.reply(**message.send_kwargs, mention_author=False)
+                            await sender(**message.send_kwargs, mention_author=False)
                             if file:
-                                await ctx.send(file=file)
+                                await sender(file=file)
                     await ctx.message.edit(suppress=True)
