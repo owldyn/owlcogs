@@ -79,7 +79,7 @@ class RedditProcessor(AbstractProcessor):
             if ".png" not in imglink and ".jpg" not in imglink and ".gif" not in imglink:
                 imglink = imglink + ".png"
 
-        check_videos = ['v.redd.it', 'gyfcat', 'streamable']
+        check_videos = ['v.redd.it', 'gfycat', 'streamable']
 
         if (True in [check in imglink for check in check_videos] or
            ("imgur" in imglink and ".gifv" in imglink)):
