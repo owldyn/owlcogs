@@ -10,16 +10,22 @@ class Ffmpeg:
 
     @staticmethod
     def _run_process_on_file(command, file):
-        with subprocess.Popen(command, stdin=subprocess.PIPE, stdout=subprocess.PIPE) as process:
-            # Seek the file to prep it for piping
-            file.seek(0)
-            info = process.communicate(input=file.read())
-        return info
+        # with subprocess.Popen(command, stdin=subprocess.PIPE, stdout=subprocess.PIPE) as process:
+        #     # Seek the file to prep it for piping
+        #     file.seek(0)
+        #     info = process.communicate(input=file.read())
+        try:
+            info = subprocess.run(command, capture_output=True, check=False)
+            info.check_returncode()
+        except Exception as exc:
+            print(info.stderr, flush=True)
+            raise exc
+        return [info.stdout, info.stderr]
 
     def get_information(self, file: tempfile.SpooledTemporaryFile) -> dict:
         """Gets a json of the information of the file."""
         args = ['-v', 'quiet', '-print_format', 'json',
-                '-show_format', '-show_streams', '-']
+                '-show_format', '-show_streams', file.name]
         json_string = self.run_ffmpeg_command_on_file(
             self.Commands.FFPROBE, args, file)[0].decode('utf-8')
         try:
@@ -46,7 +52,7 @@ class Ffmpeg:
 
         def __init__(self, file, *args: object) -> None:
             self.ffmpeg_response = Ffmpeg().run_ffmpeg_command_on_file(
-                Ffmpeg.Commands.FFPROBE, ['-'], file)
+                Ffmpeg.Commands.FFPROBE, [file.name], file)
             super().__init__(str(self.ffmpeg_response), *args)
 
     def run_ffmpeg_command_on_file(self, command: Commands,
@@ -76,7 +82,7 @@ class Ffmpeg:
     def replace_audio(self, file: tempfile.SpooledTemporaryFile):
         """Replaces the file's audio with silent audio. Works even if there's no audio track.
         Modifies the file object in place."""
-        args = ['-i', '-', '-f', 'lavfi', '-i', 'anullsrc=channel_layout=stereo:sample_rate=44100',
+        args = ['-i', file.name, '-f', 'lavfi', '-i', 'anullsrc=channel_layout=stereo:sample_rate=44100',
                 '-c:v', 'copy', '-c:a', 'aac', '-map', '0:v', '-map', '1:a', '-shortest']
 
         removed_audio = self.run_ffmpeg_command_on_file(
@@ -86,7 +92,7 @@ class Ffmpeg:
 
     def shrink_video(self, file: tempfile.SpooledTemporaryFile):
         """Lowers the quality of the video by halving the resolution on both axis."""
-        args = ['-i', '-', '-crf', '24', '-vf',
+        args = ['-i', file.name, '-crf', '24', '-vf',
                 'scale=ceil(iw/4)*2:ceil(ih/4)*2', '-b:a', '128k']
 
         smaller_video = self.run_ffmpeg_command_on_file(
@@ -95,7 +101,7 @@ class Ffmpeg:
 
     def lower_quality(self, file: tempfile.SpooledTemporaryFile):
         """Lowers the quality of the video by using crf 28."""
-        args = ['-i', '-', '-preset',
+        args = ['-i', file.name, '-preset',
                 'veryfast', '-crf', '28', '-b:a', '128k']
 
         smaller_video = self.run_ffmpeg_command_on_file(
@@ -105,7 +111,7 @@ class Ffmpeg:
     def normalize_file(self, file: tempfile.SpooledTemporaryFile):
         """Runs the file through ffmpeg with copy codecs
         to fix any issues caused by the way we call yt-dlp."""
-        args = ['-i', '-', '-c:v', 'copy', '-c:a', 'copy']
+        args = ['-i', file.name, '-c:v', 'copy', '-c:a', 'copy']
 
         normalized_video = self.run_ffmpeg_command_on_file(
             self.Commands.FFMPEG, args, file)[0]

@@ -11,7 +11,7 @@ class SpooledYoutubeDL:
         self.downloaded_file = None
 
     def __enter__(self):
-        self.downloaded_file = tempfile.SpooledTemporaryFile()
+        self.downloaded_file = tempfile.NamedTemporaryFile()
         return self
 
     def __exit__(self, exc_type, exc_value, traceback):
