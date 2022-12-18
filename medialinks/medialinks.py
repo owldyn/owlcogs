@@ -152,7 +152,7 @@ class MediaLinks(commands.Cog):
                             sender = ctx.send
                         if spoiler and message.type == message.MessageTypes.IMAGE_EMBED:
                             if not message.image_url: # Can't do the hack here
-                                await sender(**message.send_kwargs)
+                                await sender(**message.send_kwargs, mention_author=False)
                             else:
                                 spoiler_setup = await sender(f'||{message.image_url}||', mention_author=False)
                                 await spoiler_setup.edit(**message.send_kwargs)
@@ -162,5 +162,5 @@ class MediaLinks(commands.Cog):
                                 file = message.send_kwargs.pop('file')
                             await sender(**message.send_kwargs, mention_author=False)
                             if file:
-                                await sender(file=file)
+                                await ctx.send(file=file)
                     await ctx.message.edit(suppress=True)
