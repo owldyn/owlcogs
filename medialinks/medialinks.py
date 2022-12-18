@@ -116,7 +116,17 @@ class MediaLinks(commands.Cog):
                         await self.process_link(processor, matches, ctx)
                         break
 
-    async def process_link(self, processor: processors.base.AbstractProcessor, matches: list, ctx):
+    @commands.command()
+    async def medialink(self, ctx, url, spoiler=False):
+        for processor in self.supported_processors:
+            for check in processor.regex_checks:
+                matches = check.findall(url)
+                if matches:
+                    matches = ["".join(list(match)) for match in matches] # findall returns the groups separated.
+                    return await self.process_link(processor, [url], ctx, spoiler)
+        await ctx.send("Url did not match any recognized urls!")
+
+    async def process_link(self, processor: processors.base.AbstractProcessor, matches: list, ctx, spoiler: bool = False):
         async with ctx.typing():
             for match in matches:
                 with processor() as proc:
