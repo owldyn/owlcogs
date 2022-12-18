@@ -96,6 +96,7 @@ class MediaLinks(commands.Cog):
 
     @commands.Cog.listener("on_message_without_command")
     async def automedialink(self, message):
+        """Checks each message sent in the server for a compatible link, then sends it"""
         checks = [
             bool(message.author.bot),
             bool(message.guild) and bool(message.guild.id in await self.conf.guilds_ignored()),
@@ -133,10 +134,22 @@ class MediaLinks(commands.Cog):
                     message_dict = await proc.process_url(match)
                     messages = message_dict.get('post')
                     comment = message_dict.get('comments', None)
+                    messages_to_send = []
                     if isinstance(messages, list):
                         for message_builder in messages:
-                            await ctx.send(**message_builder.send_kwargs)
+                            messages_to_send.append(message_builder)
                     else:
-                        await ctx.send(**messages.send_kwargs)
+                        messages_to_send.append(messages)
                     if comment:
-                        await ctx.send(**comment.send_kwargs)
+                        messages_to_send.append(comment)
+
+                    for message in messages_to_send:
+                        if spoiler and message.type == message.MessageTypes.IMAGE_EMBED:
+                            if not message.image_url: # Can't do the hack here
+                                await ctx.send(**message.send_kwargs)
+                            else:
+                                spoiler_setup = await ctx.reply(f'||{message.image_url}||', mention_author=False)
+                                await spoiler_setup.edit(**message.send_kwargs)
+                        else:
+                            await ctx.reply(**message.send_kwargs, mention_author=False)
+                    await ctx.message.edit(suppress=True)

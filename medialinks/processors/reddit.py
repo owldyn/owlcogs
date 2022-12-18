@@ -16,8 +16,6 @@ class RedditProcessor(AbstractProcessor):
     def __init__(self) -> None:
         super().__init__()
         self.spoiler = None
-        self.how_many_replies = None
-        self.spoiler = None
         self.audio = None
         self.url = None
         self.reddit = praw.Reddit(
@@ -26,9 +24,7 @@ class RedditProcessor(AbstractProcessor):
 
     class MessageBuilder(MessageBuilder):
         def prettify_embed(self, output):
-            if output.get('embed', None):
-                embed = output.get('embed')
-                embed._provider = {'name': 'reddit', 'url': self.url}
+            pass
 
     def verify_link(self, url, audio, spoiler=False, **kwargs):
         """Verifies the url is valid."""

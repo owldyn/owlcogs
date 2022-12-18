@@ -1,8 +1,9 @@
 
-from typing import Dict
 import abc
 import logging
+from enum import Enum, auto
 from io import BytesIO
+from typing import Dict
 
 import discord
 
@@ -16,6 +17,12 @@ MAX_LENGTH = DISCORD_MAX_FILESIZE / 25600
 
 class MessageBuilder(abc.ABC):
     """Builder for the message kwargs"""
+    class MessageTypes(Enum):
+        MULTI_EMBED = auto
+        PLAIN_MESSAGE = auto
+        TEXT_EMBED = auto
+        IMAGE_EMBED = auto
+        VIDEO = auto
 
     def __init__(self, title=None, url=None, description=None, image_url=None, video=None, spoiler=False, content=None, footer=None) -> None:
         self.title = title
@@ -26,27 +33,41 @@ class MessageBuilder(abc.ABC):
         self.url = url
         self.content = content
         self.footer = footer
+        self._type = None
+        self._send_kwargs = None
+
 
     @abc.abstractmethod
     def prettify_embed(self, output):
         """Prettify the embed (if it exists)"""
-
+    @property
+    def type(self):
+        """Message type, will be from MessageTypes enum"""
+        if not self._type:
+            self.send_kwargs
+        return self._type
     @property
     def send_kwargs(self):
         """Generates the kwargs to send to ctx.send"""
-        output = {}
-        if isinstance(self.image_url, list):
-            self._multi_embed(output)
-        elif self.content is not None:
-            self._plain_message(output)
-        elif not self.video:
-            self._general_embed(output)
-        else:  # Should only be videos left at this point.
-            self._video_embed(output)
-        self.prettify_embed(output)
-        self._set_url(output)
-        self._add_footer(output)
-        return output
+        if not self._send_kwargs:
+            output = {}
+            if isinstance(self.image_url, list):
+                self._multi_embed(output)
+                self._type = self.MessageTypes.MULTI_EMBED
+            elif self.content is not None:
+                self._plain_message(output)
+                self._type = self.MessageTypes.PLAIN_MESSAGE
+            elif not self.video:
+                self._general_embed(output)
+                # Type is handled in the func here
+            else:  # Should only be videos left at this point.
+                self._video_embed(output)
+                self._type = self.MessageTypes.VIDEO
+            self.prettify_embed(output)
+            self._set_url(output)
+            self._add_footer(output)
+            self._send_kwargs = output
+        return self._send_kwargs
 
     def _set_url(self, output):
         if output.get('embed') and self.url:
@@ -58,7 +79,8 @@ class MessageBuilder(abc.ABC):
 
     def _plain_message(self, output):
         if self.spoiler:
-            output['content'] = f'||{self.content}||'
+            content = self._make_spoiler_text(self.content)
+            output['content'] = content
         else:
             output['content'] = self.content
 
@@ -79,13 +101,24 @@ class MessageBuilder(abc.ABC):
     def _general_embed(self, output):
         embed_args = {'title': self.title}
         if self.description:
-            embed_args['description'] = self.description
+            if self.spoiler:
+                description = self._make_spoiler_text(self.description)
+                embed_args['description'] = description
+            else:
+                embed_args['description'] = self.description
+            self._type = self.MessageTypes.TEXT_EMBED
         embed = discord.Embed(**embed_args)
 
         if self.image_url:
             embed.set_image(url=self.image_url)
+            self._type = self.MessageTypes.IMAGE_EMBED
         output['embed'] = embed
 
+    @staticmethod
+    def _make_spoiler_text(text):
+        safe_text = text.replace(r'|', r'\|')
+        spoiler = f'||{safe_text}||'
+        return spoiler
 
 class AbstractProcessor(abc.ABC):
     """Base processor for all video fetches"""
