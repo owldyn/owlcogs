@@ -29,6 +29,8 @@ class RedditProcessor(AbstractProcessor):
     def verify_link(self, url, audio, spoiler=False, **kwargs):
         """Verifies the url is valid."""
         # Check both types of reddit urls.
+        print(f'rspolier: {spoiler}!', flush=True)
+        
         self.spoiler = spoiler
         self.url = url
         self.audio = audio
@@ -113,10 +115,7 @@ class RedditProcessor(AbstractProcessor):
                 return f"**{title}**\n\n{self_text}"
             if not self.spoiler:
                 self_text = self_text.replace(">!", "||").replace("!<", "||")
-            else:
-                # TODO move this to message builder
-                self_text = f'||{self_text}||'
-            return {'post': self.MessageBuilder(title=title, url=self.url, description=self_text, footer=self.footer), 'comments': comments}
+            return {'post': self.MessageBuilder(title=title, url=self.url, description=self_text, footer=self.footer, spoiler=self.spoiler), 'comments': comments}
         raise self.InvalidURL('Self post is too long!')
 
     def _process_video(self, reddit_post, match):

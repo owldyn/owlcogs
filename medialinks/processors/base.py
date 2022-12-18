@@ -18,11 +18,11 @@ MAX_LENGTH = DISCORD_MAX_FILESIZE / 25600
 class MessageBuilder(abc.ABC):
     """Builder for the message kwargs"""
     class MessageTypes(Enum):
-        MULTI_EMBED = auto
-        PLAIN_MESSAGE = auto
-        TEXT_EMBED = auto
-        IMAGE_EMBED = auto
-        VIDEO = auto
+        MULTI_EMBED = auto()
+        PLAIN_MESSAGE = auto()
+        TEXT_EMBED = auto()
+        IMAGE_EMBED = auto()
+        VIDEO = auto()
 
     def __init__(self, title=None, url=None, description=None, image_url=None, video=None, spoiler=False, content=None, footer=None) -> None:
         self.title = title
@@ -96,6 +96,7 @@ class MessageBuilder(abc.ABC):
         embed = discord.Embed(title=self.title)
         output['embed'] = embed
         filename = f'SPOILER_{self.title}.mp4' if self.spoiler else f'{self.title}.mp4'
+        print(f'spolier: {self.spoiler}!', flush=True)
         output['file'] = discord.File(self.video, filename=filename)
 
     def _general_embed(self, output):

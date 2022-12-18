@@ -113,8 +113,11 @@ class MediaLinks(commands.Cog):
                 for check in processor.regex_checks:
                     matches = check.findall(msg_content)
                     if matches:
+                        spoiler = False
+                        if 'as spoiler' in msg_content:
+                            spoiler = True
                         matches = ["".join(list(match)) for match in matches] # findall returns the groups separated.
-                        await self.process_link(processor, matches, ctx)
+                        await self.process_link(processor, matches, ctx, spoiler)
                         break
 
     @commands.command()
@@ -131,7 +134,7 @@ class MediaLinks(commands.Cog):
         async with ctx.typing():
             for match in matches:
                 with processor() as proc:
-                    message_dict = await proc.process_url(match)
+                    message_dict = await proc.process_url(match, spoiler=spoiler)
                     messages = message_dict.get('post')
                     comment = message_dict.get('comments', None)
                     messages_to_send = []
