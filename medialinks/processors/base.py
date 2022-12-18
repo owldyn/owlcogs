@@ -45,8 +45,13 @@ class MessageBuilder(abc.ABC):
         else:  # Should only be videos left at this point.
             self._video_embed(output)
         self.prettify_embed(output)
+        self._set_url(output)
         self._add_footer(output)
         return output
+
+    def _set_url(self, output):
+        if output.get('embed') and self.url:
+            output.get('embed').url = self.url
 
     def _add_footer(self, output):
         if output.get('embed') and self.footer:
