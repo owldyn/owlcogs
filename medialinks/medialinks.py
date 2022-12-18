@@ -151,5 +151,10 @@ class MediaLinks(commands.Cog):
                                 spoiler_setup = await ctx.reply(f'||{message.image_url}||', mention_author=False)
                                 await spoiler_setup.edit(**message.send_kwargs)
                         else:
+                            file = None
+                            if message.send_kwargs.get('file') and message.send_kwargs.get('embed'):
+                                file = message.send_kwargs.pop('file')
                             await ctx.reply(**message.send_kwargs, mention_author=False)
+                            if file:
+                                await ctx.send(file=file)
                     await ctx.message.edit(suppress=True)
