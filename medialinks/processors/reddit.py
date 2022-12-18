@@ -158,6 +158,8 @@ class RedditProcessor(AbstractProcessor):
             url = url.split("?")[0].replace("preview", "i")
             gallery.append(url)
         messages = []
+        messages.append(self.MessageBuilder(
+            spoiler=self.spoiler, title=title, url=url, footer=self.footer))
         while len(gallery) > 0:
             message = ""
             i = 0
@@ -168,6 +170,4 @@ class RedditProcessor(AbstractProcessor):
                     message += '\n'
             messages.append(self.MessageBuilder(
                 spoiler=self.spoiler, content=message, footer=self.footer))
-        messages.append(self.MessageBuilder(
-            spoiler=self.spoiler, content=title, footer=self.footer))
         return {'post': messages, 'comments': comments}
