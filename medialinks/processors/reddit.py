@@ -9,8 +9,8 @@ class RedditProcessor(AbstractProcessor):
     """processor for reddit"""
     # https?://old/www?.reddit.com/r/sub /comments?/postid  /shortname/commentid
     link_regex = re.compile(
-        r'(http.?://.?.?.?.?reddit.com/r/[^/]*/comment.?/)([^/]*)(/[^/]*/?)([^/]*)?.*')
-    short_reddit_regex = re.compile(r'(http.?://(.?)\.?redd.it/)(.*)?')
+        r'(http.?://.?.?.?.?reddit.com/r/[^/]*/comment.?/)([^/]*)(/[^/ ]*/?)([^/ ]*)?[^ ]*')
+    short_reddit_regex = re.compile(r'(http.?://(.?)\.?redd.it/)([^ ]*)?')
     regex_checks = [short_reddit_regex, link_regex]
 
     def __init__(self) -> None:
