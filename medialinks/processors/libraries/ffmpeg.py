@@ -7,7 +7,10 @@ from enum import Enum
 class Ffmpeg:
     ffmpeg_always_args = ['-movflags', 'frag_keyframe+empty_moov',
                           '-bsf:a', 'aac_adtstoasc', '-f', 'mp4', '-']
-
+    def __init__(self) -> None: #TODO Convert this to ask for the file to begin with.
+        """Class for handling ffmpeg calls.
+        Make one instance per video file!"""
+        self._information = None
     @staticmethod
     def _run_process_on_file(command, file):
         # with subprocess.Popen(command, stdin=subprocess.PIPE, stdout=subprocess.PIPE) as process:
@@ -24,14 +27,16 @@ class Ffmpeg:
 
     def get_information(self, file: tempfile.NamedTemporaryFile) -> dict:
         """Gets a json of the information of the file."""
-        args = ['-v', 'quiet', '-print_format', 'json',
-                '-show_format', '-show_streams', file.name]
-        json_string = self.run_ffmpeg_command_on_file(
-            self.Commands.FFPROBE, args, file)[0].decode('utf-8')
-        try:
-            return json.loads(json_string)
-        except json.JSONDecodeError as exc:
-            raise self.FfmpegError(file) from exc
+        if self._information is None:
+            args = ['-v', 'quiet', '-print_format', 'json',
+                    '-show_format', '-show_streams', file.name]
+            json_string = self.run_ffmpeg_command_on_file(
+                self.Commands.FFPROBE, args, file)[0].decode('utf-8')
+            try:
+                return json.loads(json_string)
+            except json.JSONDecodeError as exc:
+                raise self.FfmpegError(file) from exc
+        return self._information
 
     @staticmethod
     def check_for_audio(file_information: dict) -> bool:
