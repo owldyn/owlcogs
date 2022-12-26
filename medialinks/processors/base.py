@@ -6,10 +6,10 @@ from io import BytesIO
 from typing import Dict
 
 import discord
+import magic
 
 from .libraries.ffmpeg import Ffmpeg
 from .libraries.memory_ydl import SpooledYoutubeDL
-
 
 
 class MessageBuilder(abc.ABC):
@@ -21,10 +21,11 @@ class MessageBuilder(abc.ABC):
         IMAGE_EMBED = auto()
         VIDEO = auto()
 
-    def __init__(self, title=None, url=None, description=None, image_url=None, video=None, spoiler=False, content=None, footer=None) -> None:
+    def __init__(self, title=None, url=None, description=None, image_url=None, video=None, spoiler=False, content=None, footer=None, image=None) -> None:
         self.title = title
         self.description = description
         self.image_url = image_url
+        self.image = image
         self.video = video
         self.spoiler = spoiler
         self.url = url
@@ -52,6 +53,9 @@ class MessageBuilder(abc.ABC):
             if isinstance(self.image_url, list):
                 self._multi_embed(output)
                 self._type = self.MessageTypes.MULTI_EMBED
+            elif self.image is not None:
+                self._upload_image_embed(output)
+                self._type = self.MessageTypes.IMAGE_EMBED
             elif self.content is not None:
                 self._plain_message(output)
                 self._type = self.MessageTypes.PLAIN_MESSAGE
@@ -94,7 +98,6 @@ class MessageBuilder(abc.ABC):
         embed = discord.Embed(title=self.title)
         output['embed'] = embed
         filename = f'SPOILER_{self.title}.mp4' if self.spoiler else f'{self.title}.mp4'
-        print(f'spolier: {self.spoiler}!', flush=True)
         output['file'] = discord.File(self.video, filename=filename)
 
     def _general_embed(self, output):
@@ -112,6 +115,21 @@ class MessageBuilder(abc.ABC):
             embed.set_image(url=self.image_url)
             self._type = self.MessageTypes.IMAGE_EMBED
         output['embed'] = embed
+    
+    def _upload_image_embed(self, output):
+        embed = discord.Embed(title=self.title)
+        image_type = magic.from_buffer(self.image, mime=True)
+        # Example output: image/gif
+        try:
+            image_type = image_type.split('/')[1]
+        except IndexError:
+            image_type = 'jpg' # Fallback to jpg?
+        # Discord can't use underscores in embeds?
+        filename = f'{self.title}.{image_type}'.replace('_','').replace(' ', '')
+        output['file'] = discord.File(BytesIO(self.image), filename=filename)
+        embed.set_image(url=f'attachment://{filename}')
+        output['embed'] = embed
+
 
     @staticmethod
     def _make_spoiler_text(text):

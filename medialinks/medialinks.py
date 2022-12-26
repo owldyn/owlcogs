@@ -144,7 +144,7 @@ class MediaLinks(commands.Cog):
                                 await spoiler_setup.edit(**message.send_kwargs)
                         else:
                             file = None
-                            if message.send_kwargs.get('file') and message.send_kwargs.get('embed'):
+                            if message.send_kwargs.get('file') and message.send_kwargs.get('embed') and message.type == message.MessageTypes.VIDEO:
                                 file = message.send_kwargs.pop('file')
                             await sender(**message.send_kwargs, mention_author=False)
                             if file:

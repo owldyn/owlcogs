@@ -1,7 +1,12 @@
 import re
+from io import BytesIO
+from tempfile import NamedTemporaryFile
 
 import praw
+import requests
 
+from ..processors.libraries.ffmpeg import Ffmpeg
+from ..processors.libraries.memory_ydl import SpooledYoutubeDL
 from .base import AbstractProcessor, MessageBuilder
 
 
@@ -89,7 +94,8 @@ class RedditProcessor(AbstractProcessor):
             return self._process_video(reddit_post, match)
         if "reddit.com/gallery" in imglink:
             return self._process_gallery(reddit_post, match)
-
+        if "i.redd.it" in imglink and ".gif" in imglink:
+            return self._process_igif(reddit_post, match)
         # Image processing will always be a fallback. Worst case is the preview doesn't work.
         return self._process_image(reddit_post, match)
 
@@ -130,6 +136,28 @@ class RedditProcessor(AbstractProcessor):
         title = reddit_post.title
         comments = self._process_comments(match)
         return {'post': self.MessageBuilder(title=title, url=self._reddit_link(reddit_post), image_url=reddit_post.url, spoiler=self.spoiler, footer=self.footer), 'comments': comments}
+
+    def _process_igif(self, reddit_post, match):
+        title = reddit_post.title
+        comments = self._process_comments(match)
+        image = requests.get(reddit_post.url, timeout=10).content
+
+        # If the image is less than DISCORD_MAX_PREVIEW we'll just link it
+        if len(image) < self.DISCORD_MAX_PREVIEW:
+            return {'post': self.MessageBuilder(title=title, url=self._reddit_link(reddit_post), image_url=reddit_post.url, spoiler=self.spoiler, footer=self.footer), 'comments': comments}
+        # If it's above DISCORD_MAX_PREVIEW, we'll try to convert it to a video.
+        ffmpeg = Ffmpeg()
+        # Just gonna use ydl so we can use the function in abstract processor
+        self.sydl.downloaded_file.write(image)
+        ffmpeg.convert_to_mp4(self.sydl.downloaded_file)
+        if self.sydl.file_size > self.DISCORD_MAX_FILESIZE:
+            self.attempt_shrink()
+        self.sydl.downloaded_file.seek(0)
+        image = BytesIO(self.sydl.downloaded_file.read())
+        return {'post': self.MessageBuilder(title=title, url=self._reddit_link(reddit_post), video=image, spoiler=self.spoiler, footer=self.footer), 'comments': comments}
+
+
+        
 
     def _process_gallery_multiple_embeds(self, reddit_post, match):
         """posts a gallery in order, This uses multiple embeds which isn't supported in the current version of redbot (3.4)"""
