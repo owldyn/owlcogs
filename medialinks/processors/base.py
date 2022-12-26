@@ -10,9 +10,6 @@ import discord
 from .libraries.ffmpeg import Ffmpeg
 from .libraries.memory_ydl import SpooledYoutubeDL
 
-DISCORD_MAX_FILESIZE = 8388119
-# 200Kb/s (25.6KB/s) is the minimum size we'll try.
-MAX_LENGTH = DISCORD_MAX_FILESIZE / 25600
 
 
 class MessageBuilder(abc.ABC):
@@ -122,12 +119,15 @@ class MessageBuilder(abc.ABC):
         return spoiler
 
 class AbstractProcessor(abc.ABC):
+    DISCORD_MAX_FILESIZE = 8388119
+    DISCORD_MAX_PREVIEW = 51200000
+    # 200Kb/s (25.6KB/s) is the minimum size we'll try.
+    MAX_LENGTH = DISCORD_MAX_FILESIZE / 25600
     """Base processor for all video fetches"""
     @property
     @abc.abstractmethod
     def regex_checks(self):
         """A list of compiled regex"""
-        pass
 
     def __init__(self) -> None:
         self.logger = logging.getLogger(
