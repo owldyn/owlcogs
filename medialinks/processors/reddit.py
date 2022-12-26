@@ -116,7 +116,7 @@ class RedditProcessor(AbstractProcessor):
                 return f"**{title}**\n\n{self_text}"
             if not self.spoiler:
                 self_text = self_text.replace(">!", "||").replace("!<", "||")
-            return {'post': self.MessageBuilder(title=title, url=self.url, description=self_text, footer=self.footer, spoiler=self.spoiler), 'comments': comments}
+            return {'post': self.MessageBuilder(title=title, url=self._reddit_link(reddit_post), description=self_text, footer=self.footer, spoiler=self.spoiler), 'comments': comments}
         raise self.InvalidURL('Self post is too long!')
 
     def _process_video(self, reddit_post, match):
@@ -127,12 +127,12 @@ class RedditProcessor(AbstractProcessor):
             title = title[:254]
         video = self._generic_video_dl(
             url=self._reddit_link(reddit_post), audio=self.audio)
-        return {'post': self.MessageBuilder(title=title, url=self.url, spoiler=self.spoiler, video=video, footer=self.footer), 'comments': comments}
+        return {'post': self.MessageBuilder(title=title, url=self._reddit_link(reddit_post), spoiler=self.spoiler, video=video, footer=self.footer), 'comments': comments}
 
     def _process_image(self, reddit_post, match):
         title = reddit_post.title
         comments = self._process_comments(match)
-        return {'post': self.MessageBuilder(title=title, url=self.url, image_url=reddit_post.url, spoiler=self.spoiler, footer=self.footer), 'comments': comments}
+        return {'post': self.MessageBuilder(title=title, url=self._reddit_link(reddit_post), image_url=reddit_post.url, spoiler=self.spoiler, footer=self.footer), 'comments': comments}
 
     def _process_gallery_multiple_embeds(self, reddit_post, match):
         """posts a gallery in order, This uses multiple embeds which isn't supported in the current version of redbot (3.4)"""
@@ -145,7 +145,7 @@ class RedditProcessor(AbstractProcessor):
             url = reddit_post.media_metadata[id]['p'][0]['u']
             url = url.split("?")[0].replace("preview", "i")
             gallery.append(url)
-        return {'post': self.MessageBuilder(title=title, url=self.url, spoiler=self.spoiler, image_url=gallery, footer=self.footer), 'comments': comments}
+        return {'post': self.MessageBuilder(title=title, url=self._reddit_link(reddit_post), spoiler=self.spoiler, image_url=gallery, footer=self.footer), 'comments': comments}
 
     def _process_gallery(self, reddit_post, match):
         """posts a gallery in order, only 5 per message or discord won't preview them all"""
