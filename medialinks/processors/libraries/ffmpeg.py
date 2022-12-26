@@ -108,6 +108,13 @@ class Ffmpeg:
             self.Commands.FFMPEG, args, file)[0]
         self._replace_file(file, smaller_video)
 
+    def convert_to_mp4(self, file: tempfile.NamedTemporaryFile):
+        """Converts file to mp4"""
+        args = ['-i', file.name, '-c:v', 'libx264', '-c:a', 'copy']
+        video = self.run_ffmpeg_command_on_file(
+            self.Commands.FFMPEG, args, file)[0]
+        self._replace_file(file, video)
+
     def normalize_file(self, file: tempfile.NamedTemporaryFile):
         """Runs the file through ffmpeg with copy codecs
         to fix any issues caused by the way we call yt-dlp."""
