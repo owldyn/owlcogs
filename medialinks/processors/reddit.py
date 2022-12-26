@@ -21,7 +21,7 @@ class RedditProcessor(AbstractProcessor):
         self.url = None
         self.reddit = praw.Reddit(
             "Hoobot", user_agent="discord:hoobot:2.0 (by u/owldyn)")
-        self.footer = None
+        self.footer = ''
 
     class MessageBuilder(MessageBuilder):
         def prettify_embed(self, output):
@@ -57,7 +57,7 @@ class RedditProcessor(AbstractProcessor):
             # Just get the first post, that's usually going to be the right one.
             # If it's not, well they shoulda linked the reddit page not the media for it.
             reddit_post = next(self.reddit.info(url=self.url))
-            self.footer = 'This post may not be the one you expect... Send the reddit post url for more accuracy!'
+            self.footer += 'This post may not be the one you expect... Send the reddit post url for more accuracy!'
         else:
             submission_id = match.group(3)
             if not submission_id:
