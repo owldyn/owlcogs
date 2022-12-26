@@ -22,7 +22,7 @@ class Ffmpeg:
             raise exc
         return [info.stdout, info.stderr]
 
-    def get_information(self, file: tempfile.SpooledTemporaryFile) -> dict:
+    def get_information(self, file: tempfile.NamedTemporaryFile) -> dict:
         """Gets a json of the information of the file."""
         args = ['-v', 'quiet', '-print_format', 'json',
                 '-show_format', '-show_streams', file.name]
@@ -56,13 +56,13 @@ class Ffmpeg:
             super().__init__(str(self.ffmpeg_response), *args)
 
     def run_ffmpeg_command_on_file(self, command: Commands,
-                                   args: list, file: tempfile.SpooledTemporaryFile) -> tuple:
+                                   args: list, file: tempfile.NamedTemporaryFile) -> tuple:
         """Runs the command with the given args on the given file.
 
         Args:
             command (Commands): The command to run
             args (list): The args to add to the command
-            file (tempfile.SpooledTemporaryFile): The file to run it on.
+            file (tempfile.NamedTemporaryFile): The file to run it on.
 
         Returns:
             tuple: the return from subprocess.popen.communicate
@@ -74,12 +74,12 @@ class Ffmpeg:
         return self._run_process_on_file(commandlist, file)
 
     @staticmethod
-    def _replace_file(original_file: tempfile.SpooledTemporaryFile, new_data):
+    def _replace_file(original_file: tempfile.NamedTemporaryFile, new_data):
         original_file.seek(0)
         original_file.truncate()
         original_file.write(new_data)
 
-    def replace_audio(self, file: tempfile.SpooledTemporaryFile):
+    def replace_audio(self, file: tempfile.NamedTemporaryFile):
         """Replaces the file's audio with silent audio. Works even if there's no audio track.
         Modifies the file object in place."""
         args = ['-i', file.name, '-f', 'lavfi', '-i', 'anullsrc=channel_layout=stereo:sample_rate=44100',
@@ -90,7 +90,7 @@ class Ffmpeg:
         # Erase the file and replace it with the new file.
         self._replace_file(file, removed_audio)
 
-    def shrink_video(self, file: tempfile.SpooledTemporaryFile):
+    def shrink_video(self, file: tempfile.NamedTemporaryFile):
         """Lowers the quality of the video by halving the resolution on both axis."""
         args = ['-i', file.name, '-crf', '24', '-vf',
                 'scale=ceil(iw/4)*2:ceil(ih/4)*2', '-b:a', '128k']
@@ -99,7 +99,7 @@ class Ffmpeg:
             self.Commands.FFMPEG, args, file)[0]
         self._replace_file(file, smaller_video)
 
-    def lower_quality(self, file: tempfile.SpooledTemporaryFile):
+    def lower_quality(self, file: tempfile.NamedTemporaryFile):
         """Lowers the quality of the video by using crf 28."""
         args = ['-i', file.name, '-preset',
                 'veryfast', '-crf', '28', '-b:a', '128k']
@@ -108,7 +108,7 @@ class Ffmpeg:
             self.Commands.FFMPEG, args, file)[0]
         self._replace_file(file, smaller_video)
 
-    def normalize_file(self, file: tempfile.SpooledTemporaryFile):
+    def normalize_file(self, file: tempfile.NamedTemporaryFile):
         """Runs the file through ffmpeg with copy codecs
         to fix any issues caused by the way we call yt-dlp."""
         args = ['-i', file.name, '-c:v', 'copy', '-c:a', 'copy']
