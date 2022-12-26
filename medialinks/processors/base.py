@@ -41,7 +41,8 @@ class MessageBuilder(abc.ABC):
     def type(self):
         """Message type, will be from MessageTypes enum"""
         if not self._type:
-            self.send_kwargs
+            # Generate the kwargs, which will set the type.
+            self.send_kwargs # pylint: disable=pointless-statement
         return self._type
     @property
     def send_kwargs(self):
