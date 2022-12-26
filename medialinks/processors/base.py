@@ -179,7 +179,7 @@ class AbstractProcessor(abc.ABC):
         """Uses ffmpeg to attempt to shrink the video to fit within Discord's file size limits
         Recursively reduces the dimensions by half,
         then uses a higher CRF until the file is below the limit"""
-        if self.video_duration and float(self.video_duration) > MAX_LENGTH:
+        if self.video_duration and float(self.video_duration) > self.MAX_LENGTH:
             # We're gonna try to shrink it even if we can't get the duration
             raise self.VideoTooLarge(
                 'Video is too long to shrink without extreme quality loss.')
@@ -189,13 +189,13 @@ class AbstractProcessor(abc.ABC):
         self.logger.debug('file_size before %s = %s',
                           recursion_depth, self.sydl.file_size)
         self.ffmpeg.shrink_video(self.sydl.downloaded_file)
-        if self.sydl.file_size > DISCORD_MAX_FILESIZE:
+        if self.sydl.file_size > self.DISCORD_MAX_FILESIZE:
             self.logger.debug('file_size after1 %s = %s',
                               recursion_depth, self.sydl.file_size)
             self.ffmpeg.lower_quality(self.sydl.downloaded_file)
             self.logger.debug('file_size after2 %s = %s',
                               recursion_depth, self.sydl.file_size)
-            if self.sydl.file_size > DISCORD_MAX_FILESIZE:
+            if self.sydl.file_size > self.DISCORD_MAX_FILESIZE:
                 # Recurse if too big still
                 self.attempt_shrink(recursion_depth+1)
         return recursion_depth
@@ -224,7 +224,7 @@ class AbstractProcessor(abc.ABC):
         self.sydl.download_video(url)
         self.normalize_file()
         self.check_audio(audio)
-        if self.sydl.file_size > DISCORD_MAX_FILESIZE:
+        if self.sydl.file_size > self.DISCORD_MAX_FILESIZE:
             self.logger.info(
                 'File is larger than discord max filesize, attempting shrinkage.')
             if self.attempt_shrink() is not False:
