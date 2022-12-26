@@ -6,7 +6,6 @@ from io import BytesIO
 from typing import Dict
 
 import discord
-import magic
 
 from .libraries.ffmpeg import Ffmpeg
 from .libraries.memory_ydl import SpooledYoutubeDL
@@ -118,12 +117,13 @@ class MessageBuilder(abc.ABC):
     
     def _upload_image_embed(self, output):
         embed = discord.Embed(title=self.title)
-        image_type = magic.from_buffer(self.image, mime=True)
-        # Example output: image/gif
-        try:
-            image_type = image_type.split('/')[1]
-        except IndexError:
-            image_type = 'jpg' # Fallback to jpg?
+        image_type = 'gif' # TODO Figure out libmagic issues?
+        # image_type = magic.from_buffer(self.image, mime=True)
+        # # Example output: image/gif
+        # try:
+        #     image_type = image_type.split('/')[1]
+        # except IndexError:
+        #     image_type = 'jpg' # Fallback to jpg?
         # Discord can't use underscores in embeds?
         filename = f'{self.title}.{image_type}'.replace('_','').replace(' ', '')
         output['file'] = discord.File(BytesIO(self.image), filename=filename)
