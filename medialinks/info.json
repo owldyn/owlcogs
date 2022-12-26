@@ -1,0 +1,12 @@
+{
+    "requirements": [
+      "requests",
+      "yt-dlp",
+      "youtube-dl",
+      "asyncpraw",
+      "praw",
+      "tweepy",
+      "pixiv-api",
+      "python-magic"
+    ]
+  }
