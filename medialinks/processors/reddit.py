@@ -122,9 +122,6 @@ class RedditProcessor(AbstractProcessor):
     def _process_video(self, reddit_post, match):
         title = reddit_post.title
         comments = self._process_comments(match)
-        if len(title) > 255:
-            # Just trim it
-            title = title[:254]
         video = self._generic_video_dl(
             url=self._reddit_link(reddit_post), audio=self.audio)
         return {'post': self.MessageBuilder(title=title, url=self._reddit_link(reddit_post), spoiler=self.spoiler, video=video, footer=self.footer), 'comments': comments}
