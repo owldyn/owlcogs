@@ -11,7 +11,8 @@ class RedditProcessor(AbstractProcessor):
     link_regex = re.compile(
         r'(http.?://.?.?.?.?reddit.com/r/[^/]*/comment.?/)([^/]*)(/[^/ ]*/?)([^/ ]*)?[^ ]*')
     short_reddit_regex = re.compile(r'(http.?://(.?)\.?redd.it/)([^ ]*)?')
-    regex_checks = [short_reddit_regex, link_regex]
+    short_reddit_check = re.compile(r'(http.?://.?\.?redd.it/)([^ ]*)?') # this needs to be different so we can pass the link in medialinks.
+    regex_checks = [short_reddit_check, link_regex]
 
     def __init__(self) -> None:
         super().__init__()
