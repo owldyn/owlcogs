@@ -83,14 +83,14 @@ class MediaLinks(commands.Cog):
     @commands.Cog.listener("on_message_without_command")
     async def automedialink(self, message):
         """Checks each message sent in the server for a compatible link, then sends it"""
-        checks = [
+        exclusions = [
             bool(message.author.bot),
             bool(message.guild) and bool(message.guild.id in await self.conf.guilds_ignored()),
             bool(message.channel) and bool(message.channel.id in await self.conf.channels_ignored()),
             bool(message.author) and bool(message.author.id in await self.conf.users_ignored()),
         ]
 
-        if True in checks:
+        if True in exclusions:
             return
         msg_content = message.content.lower()
         if "http" in msg_content:
