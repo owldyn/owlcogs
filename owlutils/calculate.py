@@ -6,59 +6,30 @@ class Calculator:
         self.tokens = []
         self.result = 0
         self.prev_operator = None
+        self.word_mapping = {
+            "plus": "+",
+            "minus": "-",
+            "times": "*",
+            "multipliedby": "*",
+            "dividedby": "/",
+            "tothepowerof": "^",
+            "x": "*",
+        }
 
     def calculate(self, expression):
         # remove all whitespace from the expression
-        self.expression = expression.replace(" ", "")
-        match = re.fullmatch(r'\d+(?:(\+|\-|\*|\/|plus|minus|times|dividedby|x|multipliedby)\d+)*', self.expression)
+        expression = expression.replace(" ", "").lower()
+        match = re.fullmatch(r'\d+(?:(\+|\-|\*|\/|plus|minus|times|dividedby|x|multipliedby)\d+)*', expression)
 
         # if there is no match, return None
         if match is None:
             return None
-        # use a regular expression to match numbers, arithmetic operators, and
-        # words for the operators in the expression string
-        self.tokens = re.findall(r'(\d+|[\+\-\*\/]|plus|minus|times|dividedby|x|multipliedby)', self.expression)
-
-        # initialize the result to the first number in the expression
-        self.result = int(self.tokens[0])
-
-        # iterate over the tokens in the expression
-        for token in self.tokens[1:]:
-            # if the token is a number, set it as the current number
-            if token.isdigit():
-                current_num = int(token)
-            else:
-                # if the token is a word for an operator, set the token to
-                # the corresponding symbol
-                if token == "plus":
-                    token = "+"
-                elif token == "minus":
-                    token = "-"
-                elif token in ["times", "x", "multipliedby"]:
-                    token = "*"
-                elif token == "dividedby":
-                    token = "/"
-
-                # if the previous operator was not set, set the previous
-                # operator to the current token and continue
-                if self.prev_operator is None:
-                    self.prev_operator = token
-                    continue
-
-            # otherwise, perform the previous operation on the result
-            # and the current number
-            if self.prev_operator == "+":
-                self.result += current_num
-            elif self.prev_operator == "-":
-                self.result -= current_num
-            elif self.prev_operator == "*":
-                self.result *= current_num
-            elif self.prev_operator == "/":
-                self.result /= current_num
-
-            # set the previous operator to the current token
-            self.prev_operator = None
+        # replace words with operators
+        for word, operator in self.word_mapping.items():
+            expression = expression.replace(word, operator)
+        # evaluate the expression
+        result = eval(expression) #pylint: disable=eval-used
 
         # return the final result
-        return self.result
+        return result
 
