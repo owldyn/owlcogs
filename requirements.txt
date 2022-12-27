@@ -2,3 +2,4 @@ asyncpraw
 youtube_dl
 tweepy
 pixiv-api
+praw
