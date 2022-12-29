@@ -138,11 +138,11 @@ class MessageBuilder(abc.ABC):
         return spoiler
 
 class AbstractProcessor(abc.ABC):
+    """Base processor for all video fetches"""
     DISCORD_MAX_FILESIZE = 8388119
     DISCORD_MAX_PREVIEW = 51200000
     # 200Kb/s (25.6KB/s) is the minimum size we'll try.
     MAX_LENGTH = DISCORD_MAX_FILESIZE / 25600
-    """Base processor for all video fetches"""
     @property
     @abc.abstractmethod
     def regex_checks(self):
