@@ -120,7 +120,14 @@ class MediaLinks(commands.Cog):
         async with ctx.typing():
             for match in matches:
                 with processor() as proc:
-                    message_dict = await proc.process_url(match, spoiler=spoiler)
+                    try:
+                        message_dict = await proc.process_url(match, spoiler=spoiler)
+                    except processor.VideoTooLarge:
+                        await ctx.send('Video was too long to shrink.')
+                        return
+                    except processor.InvalidURL: # this shouldn't ever happen? but jic
+                        await ctx.send("Medialinks didn't recognize any supported urls!")
+                        return
                     messages = message_dict.get('post')
                     comment = message_dict.get('comments', None)
                     messages_to_send = []
