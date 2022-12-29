@@ -6,11 +6,16 @@ from . import processors
 
 
 class MediaLinks(commands.Cog):
-    """v.redd.it downloader"""
+    """Downloader for media from multiple websites"""
+    CHECK_MARK = "✅"
     default_global_settings = {"channels_ignored": [],
-                               "guilds_ignored": [], "users_ignored": []}
+                               "guilds_ignored": [],
+                               "users_ignored": [],
+                               "api_keys": {}}
     supported_processors = [processors.reddit.RedditProcessor]
-
+    supported_apis = {
+        'reddit': ['name', 'client_id', 'client_secret', 'user_agent']
+        }
     def __init__(self, bot):
         """set it up"""
         super().__init__()
@@ -18,18 +23,33 @@ class MediaLinks(commands.Cog):
         self.conf = Config.get_conf(self, identifier=26400736)
         self.conf.register_global(**self.default_global_settings)
 
-    @commands.command()
-    async def testingvredditnew(self, ctx, url):
-        """Downloads the vreddit video and links it to webserver if too large"""
-        async with ctx.typing():
-            with processors.reddit.RedditProcessor() as reddit:
-                message_builder = await reddit.process_url(url, spoiler=True)
-                message = message_builder.get('post')
-                if isinstance(message, list):
-                    for message in message:
-                        await ctx.send(**message.send_kwargs)
-                else:
-                    await ctx.send(**message.send_kwargs)
+    @commands.group()
+    @commands.is_owner()
+    async def medialinks_apis(self, ctx):
+        """Base command for api keys"""
+
+    @medialinks_apis.command(name='add')
+    async def add_api(self, ctx, service, *settings):
+        """Add api settings to the bot in format <service> <key=value> <key=value>"""
+        service = service.lower()
+        api_options = self.supported_apis.get(service)
+        if not api_options:
+            await ctx.send(f'{service} not found in supported apis. Supported apis: {list(self.supported_apis.keys())}')
+            return
+        if service and not settings:
+            await ctx.send(f"Please pass options for {service}: {api_options}")
+            return
+        config_to_save = {}
+        for setting in settings:
+            setting_split = setting.split('=')
+            if setting_split[0] not in api_options:
+                await ctx.send(f'{setting_split[0]} is not a valid setting for {service}.')
+                return
+            config_to_save[setting_split[0]] = setting_split[1]
+        keys = await self.conf.api_keys()
+        keys[service] = config_to_save
+        await ctx.message.add_reaction(self.CHECK_MARK)
+
     
     @commands.guild_only()
     @commands.group(name="ignoremedialink")
