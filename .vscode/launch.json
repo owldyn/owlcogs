@@ -9,7 +9,7 @@
             "type": "python",
             "request": "launch",
             "module": "redbot",
-            "args": ["--dev", "DevHoo"],
+            "args": ["--dev", "--debug", "DevHoo"],
             "justMyCode": true
         },
         {
