@@ -18,10 +18,11 @@ class OwlUtils(commands.Cog):
         config = f"""```      networks:
       - proxy
       - default
-    labels:
+    labels!cog load :
         - "traefik.enable=true"
         # Remove below for external only
         - "traefik.http.routers.{hostname}.entrypoints=http"
+        - "traefik.http.routers.{hostname}.service={hostname}"
         - "traefik.http.routers.{hostname}.rule=Host(`{hostname}.local.owldyn.net`)"
         - "traefik.http.middlewares.{hostname}-https-redirect.redirectscheme.scheme=https"
         - "traefik.http.routers.{hostname}.middlewares={hostname}-https-redirect"
@@ -30,12 +31,13 @@ class OwlUtils(commands.Cog):
         - "traefik.http.routers.{hostname}-secure.tls=true"
         - "traefik.http.routers.{hostname}-secure.service={hostname}"
         - "traefik.http.services.{hostname}.loadbalancer.server.port={port}"
-        - "traefik.http.routers.{hostname}-secure.middlewares=secured@file"
+        - "traefik.http.routers.{hostname}-secure.middlewares=secured@file, #authelia@docker" # Uncomment for authelia"
         - "traefik.docker.network=proxy"
-        #- "traefik.http.routers.{hostname}-secure.middlewares=authelia@docker" # Uncomment for authelia```"""
-        config2 = """```
+        ```"""
+        config2 = f"""```
         # Remove below for local only
         - "traefik.http.routers.{hostname}-external.entrypoints=http"
+        - "traefik.http.routers.{hostname}-external.service={hostname}-external"
         - "traefik.http.routers.{hostname}-external.rule=Host(`{hostname}.owldyn.net`)"
         - "traefik.http.middlewares.{hostname}-external-https-redirect.redirectscheme.scheme=https"
         - "traefik.http.routers.{hostname}-external.middlewares={hostname}-https-redirect"
