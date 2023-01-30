@@ -18,7 +18,7 @@ class OwlUtils(commands.Cog):
         config = f"""```      networks:
       - proxy
       - default
-    labels!cog load :
+    labels:
         - "traefik.enable=true"
         # Remove below for external only
         - "traefik.http.routers.{hostname}.entrypoints=http"
