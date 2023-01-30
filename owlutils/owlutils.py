@@ -31,7 +31,7 @@ class OwlUtils(commands.Cog):
         - "traefik.http.routers.{hostname}-secure.tls=true"
         - "traefik.http.routers.{hostname}-secure.service={hostname}"
         - "traefik.http.services.{hostname}.loadbalancer.server.port={port}"
-        - "traefik.http.routers.{hostname}-secure.middlewares=secured@file#, authelia@docker" # Uncomment for authelia"
+        - "traefik.http.routers.{hostname}-secure.middlewares=secured@file" #, authelia@docker" # Uncomment for authelia"
         - "traefik.docker.network=proxy"
         ```"""
         config2 = f"""```
