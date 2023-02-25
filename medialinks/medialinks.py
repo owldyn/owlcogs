@@ -145,8 +145,8 @@ class MediaLinks(commands.Cog):
                     except processor.VideoTooLarge:
                         await ctx.send('Video was too long to shrink.')
                         return
-                    except processor.InvalidURL: # this shouldn't ever happen? but jic
-                        await ctx.send("Medialinks didn't recognize any supported urls!")
+                    except processor.InvalidURL as exc: # this shouldn't ever happen? but jic
+                        await ctx.send(exc)
                         return
                     messages = message_dict.get('post')
                     comment = message_dict.get('comments', None)
