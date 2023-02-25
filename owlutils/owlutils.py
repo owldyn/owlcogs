@@ -90,6 +90,6 @@ class OwlUtils(commands.Cog):
             ]:
                 file_names.append(file.filename)
                 newline = "\n"
-                reply = f'{f"Files are named {newline}:" if len(file_names) > 1 else "File is named:"}{newline.join(file_names)}'
+                reply = f'{f"Files are named {newline}:" if len(file_names) > 1 else "File is named: "}{newline.join(file_names)}'
                 ctx = await self.bot.get_context(message)
         await ctx.reply(reply, mention_author=False)
