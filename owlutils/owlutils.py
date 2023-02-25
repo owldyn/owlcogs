@@ -4,6 +4,7 @@ import requests
 from redbot.core import Config, checks, commands
 from .calculate import Calculator
 
+
 class OwlUtils(commands.Cog):
 
     """Small utils I'm making for myself."""
@@ -60,17 +61,35 @@ class OwlUtils(commands.Cog):
         if message.author.bot:
             return
         msg_content = message.content.lower()
-        split_message = msg_content.split(' ')
-        if (msg_content
-            and re.match(r"what['s ]?", split_message[0])):
+        split_message = msg_content.split(" ")
+        if msg_content and re.match(r"what['s ]?", split_message[0]):
             try:
                 ctx = await self.bot.get_context(message)
-                if "what" in split_message[0] and 'is' in split_message[1]:
-                    calculate_string = ' '.join(split_message[2:])
+                if "what" in split_message[0] and "is" in split_message[1]:
+                    calculate_string = " ".join(split_message[2:])
                 else:
-                    calculate_string = ' '.join(split_message[1:])
-                total = Calculator().calculate(' '.join(calculate_string))
+                    calculate_string = " ".join(split_message[1:])
+                total = Calculator().calculate(" ".join(calculate_string))
                 if total is not None:
                     await ctx.send(total)
             except IndexError:
                 pass
+
+    @commands.Cog.listener("on_message_without_command")
+    async def get_file_name(self, message):
+        """Returns the file names in the message if the files are videos
+        Since discord feels like removing the file names from being visible :)"""
+        if message.author.bot:
+            return
+        if not message.attachments:
+            return
+        file_names = []
+        for file in message.attachments:
+            if True in [
+                file_ext in file.filename for file_ext in [".mp4", ".mkv", "webm"]
+            ]:
+                file_names.append(file.filename)
+                newline = "\n"
+                reply = f'{f"Files are named {newline}:" if len(file_names) > 1 else "File is named:"}{newline.join(file_names)}'
+                ctx = await self.bot.get_context(message)
+        await ctx.reply(reply, mention_author=False)
