@@ -3,9 +3,9 @@ import subprocess
 import tempfile
 
 
-class SpooledYoutubeDL:
-    """Uses a SpooledTemporaryFile and yt-dlp to fetch 
-    and expose a youtube file without downloading it."""
+class TemporaryYoutubeDL:
+    """Uses a NamedTemporaryFile and yt-dlp to fetch
+    and expose a video file as a temporary file."""
 
     def __init__(self) -> None:
         self.downloaded_file = None
@@ -24,14 +24,15 @@ class SpooledYoutubeDL:
             url (str): the url to download from
             ydl_opts (list, optional): Arguments to add to the yt-dlp command. Defaults to None.
         """
-        base_command = ['yt-dlp']
+        base_command = ["yt-dlp"]
         if ydl_opts is None:
             ydl_opts = []
         base_command.extend(ydl_opts)
-        base_command.extend([url, '-o', '-'])
+        base_command.extend([url, "-o", "-"])
 
         download_command = subprocess.run(
-            base_command, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, check=False)
+            base_command, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, check=False
+        )
         self.downloaded_file.write(download_command.stdout)
 
     @property
