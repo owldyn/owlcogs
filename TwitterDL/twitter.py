@@ -12,22 +12,12 @@ from redbot.core import commands
 
 class twitter_DL(commands.Cog):
     MAX_FS = 8388119
-    def setup_tweepy(self):
-        with open("/data/keys/keystwitter.py") as KEYS_FILE:
-            lines = KEYS_FILE.readlines()
-            consumer_key = lines[0].rstrip()
-            consumer_secret = lines[1].rstrip()
-            access_token = lines[2].rstrip()
-            access_token_secret = lines[3].rstrip()
-            auth = tweepy.OAuthHandler(consumer_key, consumer_secret)
-            auth.set_access_token(access_token, access_token_secret)
-        return tweepy.API(auth, wait_on_rate_limit=True)
 
     def __init__(self, bot):
         """set it up"""
         super().__init__()
         self.bot = bot
-        self.twitter = self.setup_tweepy()
+
 
     def get_tweet_id(self, url):
         """Returns a twitter post's ID from the url"""
@@ -59,35 +49,25 @@ class twitter_DL(commands.Cog):
             if("twitter.com" not in url):
                 await ctx.send("URL is not a valid twitter URL")
                 return
-            tweet_id = self.get_tweet_id(url)
 
-            tweet = self.twitter.get_status(tweet_id, tweet_mode='extended')
-            try:
-                tweet_str = str(tweet.extended_entities['media'])
-                if('animated_gif' in tweet_str):
-                    media_type = "gif"
-                elif('video' in tweet_str): #Crude way of checking if there's a video..
-                    media_type = "vid"
-                else:
-                    await ctx.send("Error, video not detected in the tweet.")
-                    return
-            except:
-                await ctx.send("Error, video not detected in the tweet.")
-                return
             ydl_opts = {
                 'format':'best',
                 'outtmpl': f'/tmp/{ctx.message.id}.%(ext)s'
             }
-            with youtube_dl.YoutubeDL(ydl_opts) as ydl:
-                dl = ydl.extract_info(url, download=True)
-                filename = ydl.prepare_filename(dl)
+            try:
+                with youtube_dl.YoutubeDL(ydl_opts) as ydl:
+                    dl = ydl.extract_info(url, download=True)
+                    filename = ydl.prepare_filename(dl)
+            except youtube_dl.DownloadError:
+                await ctx.send("Twitter link did not have a video, or youtubedl is broken.")
+                return
 
             if dl['duration'] is None:
                 duration = await self.get_duration(filename)
             else:
                 duration = dl['duration']
 
-            if (force_gif == "yes") or (media_type == 'gif' and duration < 5):
+            if (force_gif == "yes") or (duration < 5):
                 await self.make_and_send_gif(ctx, filename)
             else:
                 await self.check_audio_and_send(ctx, filename, audio)
