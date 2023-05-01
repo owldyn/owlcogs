@@ -4,6 +4,7 @@ from io import BytesIO
 import praw
 import requests
 
+from ..processors.libraries import article_summary
 from ..processors.libraries.ffmpeg import Ffmpeg
 from .base import AbstractProcessor, MessageBuilder
 
@@ -105,8 +106,34 @@ class RedditProcessor(AbstractProcessor):
             return self._process_gallery(reddit_post, match)
         if "i.redd.it" in imglink and ".gif" in imglink:
             return self._process_igif(reddit_post, match)
+        if True in [file_type in imglink for file_type in [".png", ".jpg", ".jpeg", ".webp", ".bmp"]]:
+            return self._process_image(reddit_post, match)
+        try:
+            # Try to it through the article matcher
+            return self._process_article(reddit_post, match)
+        except Exception: #pylint: disable=broad-except
+            pass
         # Image processing will always be a fallback. Worst case is the preview doesn't work.
         return self._process_image(reddit_post, match)
+
+    def _process_article(self, reddit_post, match):
+        summarized_article = article_summary.summarize(reddit_post.url)
+        title = reddit_post.title
+        comments = self._process_comments(match)
+        if len(summarized_article) < 4096:
+            if len(title) > 255:
+                return f"**{title}**\n\n{summarized_article}"
+            return {
+                "post": self.MessageBuilder(
+                    title=title,
+                    url=self._reddit_link(reddit_post),
+                    description=summarized_article,
+                    footer=self.footer,
+                    spoiler=self.spoiler,
+                ),
+                "comments": comments,
+            }
+        raise self.InvalidURL("Self post is too long!")
 
     @staticmethod
     def _reddit_link(reddit_post):

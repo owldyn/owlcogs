@@ -7,6 +7,9 @@
       "praw",
       "tweepy",
       "pixiv-api",
-      "python-magic"
+      "python-magic",
+      "numpy",
+      "sumy",
+      "ntlk"
     ]
   }
