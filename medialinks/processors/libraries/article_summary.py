@@ -26,8 +26,8 @@ def summarize(url: str, iteration:int = 0) -> str:
         return output
     except LookupError:
         if iteration > 0:
-            raise Exception("ntlk not working")
-        import ntlk
-        ntlk.download('punkt')
+            raise Exception("nltk not working")
+        import nltk
+        nltk.download('punkt')
         return summarize(url, iteration+1)
 
