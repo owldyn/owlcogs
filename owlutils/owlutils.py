@@ -89,7 +89,10 @@ class OwlUtils(commands.Cog):
             if True in [
                 file_ext in file.filename for file_ext in [".mp4", ".mkv", "webm"]
             ]:
-                file_names.append(file.filename)
+                if "SPOILER_" in file.filename:
+                    file_names.append(f"||{file.filename}||")
+                else:
+                    file_names.append(file.filename)
                 newline = "\n"
                 reply = f'{f"Files are named {newline}:" if len(file_names) > 1 else "File is named: "}{newline.join(file_names)}'
                 ctx = await self.bot.get_context(message)
