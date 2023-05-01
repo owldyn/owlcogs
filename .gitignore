@@ -52,3 +52,6 @@ docs/_build/
 
 # Praw keys
 **/praw.ini
+
+# Redbot data location
+redbotdata/

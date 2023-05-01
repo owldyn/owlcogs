@@ -15,7 +15,7 @@ class MediaLinks(commands.Cog):
         "users_ignored": [],
         "api_keys": {},
     }
-    supported_processors = [processors.reddit.RedditProcessor]
+    supported_processors = [("reddit", processors.reddit.RedditProcessor)]
     supported_apis = {"reddit": ["name", "client_id", "client_secret", "user_agent"]}
 
     def __init__(self, bot):
@@ -129,7 +129,7 @@ class MediaLinks(commands.Cog):
         msg_content = message.content.lower()
         if "http" in msg_content:
             ctx = await self.bot.get_context(message)
-            for processor in self.supported_processors:
+            for name, processor in self.supported_processors:
                 for check in processor.regex_checks:
                     matches = check.findall(msg_content)
                     if matches:
@@ -139,19 +139,19 @@ class MediaLinks(commands.Cog):
                         matches = [
                             "".join(list(match)) for match in matches
                         ]  # findall returns the groups separated.
-                        await self.process_link(processor, matches, ctx, spoiler)
+                        await self.process_link(processor, matches, ctx, name, spoiler)
                         break
 
     @commands.command()
     async def medialink(self, ctx, url, spoiler=False):
-        for processor in self.supported_processors:
+        for name, processor in self.supported_processors:
             for check in processor.regex_checks:
                 matches = check.findall(url)
                 if matches:
                     matches = [
                         "".join(list(match)) for match in matches
                     ]  # findall returns the groups separated.
-                    return await self.process_link(processor, [url], ctx, spoiler)
+                    return await self.process_link(processor, [url], ctx, name, spoiler)
         await ctx.send("Url did not match any recognized urls!")
 
     async def process_link(
@@ -159,11 +159,17 @@ class MediaLinks(commands.Cog):
         processor: processors.base.AbstractProcessor,
         matches: list,
         ctx,
+        processor_name: str,
         spoiler: bool = False,
     ):
         async with ctx.typing():
+            try:
+                keys = await self.conf.api_keys()
+                config = keys[processor_name]
+            except KeyError:
+                config = None
             for match in matches:
-                with processor() as proc:
+                with processor(config) as proc:
                     try:
                         message_dict = await proc.process_url(match, spoiler=spoiler)
                     except processor.VideoTooLarge:

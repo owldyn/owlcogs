@@ -118,11 +118,13 @@ class RedditProcessor(AbstractProcessor):
 
     def _process_article(self, reddit_post, match):
         summarized_article = article_summary.summarize(reddit_post.url)
+        summarized_article = f"Hoobot has attempted to summarize the article:\n\n{summarized_article}"
         title = reddit_post.title
         comments = self._process_comments(match)
         if len(summarized_article) < 4096:
             if len(title) > 255:
-                return f"**{title}**\n\n{summarized_article}"
+                summarized_article = f"**{title}**\n\n{summarized_article}"
+                title = "From Reddit:"
             return {
                 "post": self.MessageBuilder(
                     title=title,
@@ -160,7 +162,8 @@ class RedditProcessor(AbstractProcessor):
         comments = self._process_comments(match)
         if len(self_text) < 4096:
             if len(title) > 255:
-                return f"**{title}**\n\n{self_text}"
+                self_text = f"**{title}**\n\n{self_text}"
+                title = "From Reddit:"
             if not self.spoiler:
                 self_text = self_text.replace(">!", "||").replace("!<", "||")
             return {

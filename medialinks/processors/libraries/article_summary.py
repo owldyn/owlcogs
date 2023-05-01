@@ -9,7 +9,7 @@ from sumy.utils import get_stop_words
 
 
 LANGUAGE = "english"
-SENTENCES_COUNT = 15
+SENTENCES_COUNT = 10
 
 
 def summarize(url: str, iteration:int = 0) -> str:
