@@ -84,6 +84,7 @@ class OwlUtils(commands.Cog):
         if not message.attachments:
             return
         file_names = []
+        reply = None
         for file in message.attachments:
             if True in [
                 file_ext in file.filename for file_ext in [".mp4", ".mkv", "webm"]
@@ -92,4 +93,5 @@ class OwlUtils(commands.Cog):
                 newline = "\n"
                 reply = f'{f"Files are named {newline}:" if len(file_names) > 1 else "File is named: "}{newline.join(file_names)}'
                 ctx = await self.bot.get_context(message)
-        await ctx.reply(reply, mention_author=False)
+        if reply:
+            await ctx.reply(reply, mention_author=False)
