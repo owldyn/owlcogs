@@ -52,8 +52,8 @@ class MediaLinks(commands.Cog):
                 )
                 return
             config_to_save[setting_split[0]] = setting_split[1]
-        keys = await self.conf.api_keys()
-        keys[service] = config_to_save
+        async with self.conf.api_keys() as keys:
+            keys[service] = config_to_save
         await ctx.message.add_reaction(self.CHECK_MARK)
 
     @commands.guild_only()
