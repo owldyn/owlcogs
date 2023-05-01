@@ -5,7 +5,6 @@ import subprocess
 
 import discord
 import requests as req
-import tweepy
 import youtube_dl
 from redbot.core import commands
 

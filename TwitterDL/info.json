@@ -2,7 +2,6 @@
     "requirements": [
       "requests",
       "yt-dlp",
-      "youtube-dl",
-      "tweepy"
+      "youtube-dl"
     ]
   }
