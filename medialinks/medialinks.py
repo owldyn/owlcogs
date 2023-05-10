@@ -220,6 +220,6 @@ class MediaLinks(commands.Cog):
         """Attempt to summarize a given article"""
         try:
             summary = article_summary.summarize(url, num_sentences)
-            await ctx.reply(summary)
+            await ctx.reply(embed=discord.Embed(description=summary), mention_author=False)
         except Exception:
-            await ctx.reply("There was an error processing the url!")
+            await ctx.reply("There was an error processing the url!", mention_author=False)
