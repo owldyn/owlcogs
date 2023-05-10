@@ -9,10 +9,9 @@ from sumy.utils import get_stop_words
 
 
 LANGUAGE = "english"
-SENTENCES_COUNT = 10
 
 
-def summarize(url: str, iteration:int = 0) -> str:
+def summarize(url: str, num_sentences = 10, iteration:int = 0) -> str:
     """(attempt to) Summarize an online article"""
     try:
         parser = HtmlParser.from_url(url, Tokenizer(LANGUAGE))
@@ -21,7 +20,7 @@ def summarize(url: str, iteration:int = 0) -> str:
         summarizer = Summarizer(stemmer)
         summarizer.stop_words = get_stop_words(LANGUAGE)
         output = ""
-        for sentence in summarizer(parser.document, SENTENCES_COUNT):
+        for sentence in summarizer(parser.document, num_sentences):
             output += f"{sentence}\n\n"
         return output
     except LookupError:
@@ -29,5 +28,5 @@ def summarize(url: str, iteration:int = 0) -> str:
             raise Exception("nltk not working")
         import nltk
         nltk.download('punkt')
-        return summarize(url, iteration+1)
+        return summarize(url, num_sentences, iteration+1)
 
