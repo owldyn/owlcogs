@@ -104,7 +104,6 @@ class OwlUtils(commands.Cog):
         if reply:
             await ctx.reply(reply, mention_author=False)
 
-    @commands.is_owner()
     @commands.command()
     async def script_all_links(self, ctx: Context, user=None):
         """Grabs all link in the channel (optionally from specified user)."""
