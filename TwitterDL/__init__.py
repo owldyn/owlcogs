@@ -4,5 +4,5 @@ import tweepy
 import youtube_dl
 import requests
 
-def setup(bot):
-    bot.add_cog(twitter_DL(bot))
+async def setup(bot):
+    await bot.add_cog(twitter_DL(bot))

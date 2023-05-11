@@ -1,4 +1,4 @@
 from .medialinks import MediaLinks
 
-def setup(bot):
-    bot.add_cog(MediaLinks(bot))
+async def setup(bot):
+    await bot.add_cog(MediaLinks(bot))
