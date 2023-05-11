@@ -1,8 +1,13 @@
 import re
+from tempfile import NamedTemporaryFile
 
-import requests
-from redbot.core import Config, checks, commands
+import discord
+from redbot.core import commands
+from redbot.core.commands import Context
+
 from .calculate import Calculator
+
+DISCORD_MAX_FILESIZE = 8388119
 
 
 class OwlUtils(commands.Cog):
@@ -98,3 +103,39 @@ class OwlUtils(commands.Cog):
                 ctx = await self.bot.get_context(message)
         if reply:
             await ctx.reply(reply, mention_author=False)
+
+    @commands.is_owner()
+    @commands.command()
+    async def script_all_links(self, ctx: Context, user=None):
+        """Grabs all link in the channel (optionally from specified user)."""
+        if not ctx.channel:
+            await ctx.reply(
+                "This can only be sent in a server channel.", mention_author=False
+            )
+        edit: discord.Message = await ctx.reply(
+            "Grabbing all messages. This will probably take a while.",
+            mention_author=False,
+        )
+        async with ctx.typing():
+            count = 0
+            links = []
+            message: discord.Message
+            async for message in ctx.channel.history(limit=None):
+                if user:
+                    if message.author.mention != user:
+                        continue
+                if matches := re.findall(r"https?://[^ ]*", message.content):
+                    links.extend(matches)
+                    count += 1
+            with NamedTemporaryFile("r+") as script:
+                for link in links:
+                    script.write(f'curl "{link}" --remote-name\n')
+                script.write('pause')
+                script.seek(0)
+                file = discord.File(fp=script.file, filename="download_links.bat")
+                await edit.delete()
+                await ctx.reply(
+                    f"Found {count} messages with links, for a total of {len(links)} links.",
+                    mention_author=False,
+                    file=file,
+                )
