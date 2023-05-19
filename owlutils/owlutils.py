@@ -147,7 +147,7 @@ class OwlUtils(commands.Cog):
         if ctx.message.reference:
             message = await ctx.channel.fetch_message(ctx.message.reference.message_id)
             if message.content.find("tenor.com") >= 0:
-                await ctx.send(f"<{message.content}")
+                await ctx.send(f"<{message.content}>")
             else:
                 await ctx.send("No tenor gifs found in that message")
 
