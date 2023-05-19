@@ -25,10 +25,11 @@ class TemporaryYoutubeDL:
             url (str): the url to download from
             ydl_opts (list, optional): Arguments to add to the yt-dlp command. Defaults to None.
         """
-        if sys.executable:
-            base_command = [sys.executable, "-m", "yt-dlp"]
-        else:
-            base_command = ["yt-dlp"]
+        #if sys.executable:
+        #    base_command = [sys.executable, "-m", "yt-dlp"]
+        #else: # TODO figure out why this doesn't work.
+        print(sys.executable, flush=True)
+        base_command = ["yt-dlp"]
 
         if ydl_opts is None:
             ydl_opts = []
