@@ -152,7 +152,7 @@ class OwlUtils(commands.Cog):
                 await ctx.send("No tenor gifs found in that message")
 
         else:
-            async for message in messages:
+            async for message in ctx.channel.history(limit=4):
                 if message.content.find("tenor.com") >= 0:
                     urls.append(message.content)
             if not urls:
