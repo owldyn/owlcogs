@@ -1,5 +1,6 @@
 import os
 import subprocess
+import sys
 import tempfile
 
 
@@ -24,7 +25,11 @@ class TemporaryYoutubeDL:
             url (str): the url to download from
             ydl_opts (list, optional): Arguments to add to the yt-dlp command. Defaults to None.
         """
-        base_command = ["yt-dlp"]
+        if sys.executable:
+            base_command = [sys.executable, "-m", "yt-dlp"]
+        else:
+            base_command = ["yt-dlp"]
+
         if ydl_opts is None:
             ydl_opts = []
         base_command.extend(ydl_opts)
