@@ -26,7 +26,7 @@ class Ffmpeg:
             info = subprocess.run(command, capture_output=True, check=False)
             info.check_returncode()
         except Exception as exc:
-            print(info.stderr, flush=True)
+            logger.error(info.stderr)
             raise exc
         return [info.stdout, info.stderr]
 
