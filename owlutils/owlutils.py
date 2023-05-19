@@ -138,3 +138,22 @@ class OwlUtils(commands.Cog):
                     mention_author=False,
                     file=file,
                 )
+
+    @commands.command()
+    async def tenor(self, ctx):
+        """Search 3 previous messages for tenor links, and link them without embedding the gif
+        you can also reply to a message for the tenor link instead"""
+        urls = []
+        if ctx.message.reference:
+            messages = [await ctx.channel.fetch_message(ctx.message.reference.message_id)]
+        else:
+            messages = ctx.channel.history(limit=4)
+        async for message in messages:
+            if message.content.find("tenor.com") >= 0:
+                urls.append(message.content)
+        if not urls:
+            await ctx.send("No tenor gifs found in last 3 messages")
+        else:
+            urls.reverse()
+            for url in urls:
+                await ctx.send("<{}>".format(url))

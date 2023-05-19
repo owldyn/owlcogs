@@ -301,19 +301,6 @@ class VRedditDL(commands.Cog):
             else:
                 await ctx.send("{} is not a valid gfycat link.".format(url))
 
-    @commands.command()
-    async def tenor(self, ctx):
-        """Search 3 previous messages for tenor links, and link them without embedding the gif"""
-        urls = []
-        async for message in ctx.channel.history(limit=4):
-            if message.content.find("tenor.com") >= 0:
-                urls.append(message.content)
-        if not urls:
-            await ctx.send("No tenor gifs found in last 3 messages")
-        else:
-            urls.reverse()
-            for url in urls:
-                await ctx.send("<{}>".format(url))
 
     def get_submission_id(self, url):
         """Parses reddit url, finds submission ID. Comment ID will be the second object, but will be blank if none.
