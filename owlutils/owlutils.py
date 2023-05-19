@@ -145,15 +145,19 @@ class OwlUtils(commands.Cog):
         you can also reply to a message for the tenor link instead"""
         urls = []
         if ctx.message.reference:
-            messages = [await ctx.channel.fetch_message(ctx.message.reference.message_id)]
-        else:
-            messages = ctx.channel.history(limit=4)
-        async for message in messages:
+            message = await ctx.channel.fetch_message(ctx.message.reference.message_id)
             if message.content.find("tenor.com") >= 0:
-                urls.append(message.content)
-        if not urls:
-            await ctx.send("No tenor gifs found in last 3 messages")
+                await ctx.send(f"<{message.content}")
+            else:
+                await ctx.send("No tenor gifs found in that message")
+
         else:
-            urls.reverse()
-            for url in urls:
-                await ctx.send("<{}>".format(url))
+            async for message in messages:
+                if message.content.find("tenor.com") >= 0:
+                    urls.append(message.content)
+            if not urls:
+                await ctx.send("No tenor gifs found in last 3 messages")
+            else:
+                urls.reverse()
+                for url in urls:
+                    await ctx.send("<{}>".format(url))
