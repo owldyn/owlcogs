@@ -1,7 +1,7 @@
 import re
 from tempfile import NamedTemporaryFile
-
 import discord
+import openai
 from redbot.core import commands
 from redbot.core.commands import Context
 
@@ -129,7 +129,7 @@ class OwlUtils(commands.Cog):
             with NamedTemporaryFile("r+") as script:
                 for link in links:
                     script.write(f'curl "{link}" --remote-name\n')
-                script.write('pause')
+                script.write("pause")
                 script.seek(0)
                 file = discord.File(fp=script.file, filename="download_links.bat")
                 await edit.delete()
@@ -161,3 +161,54 @@ class OwlUtils(commands.Cog):
                 urls.reverse()
                 for url in urls:
                     await ctx.send("<{}>".format(url))
+
+    async def _get_response(self, messages):
+        return await openai.ChatCompletion.acreate(
+            model="ggml-gpt4all-j.bin", messages=messages
+        )
+
+    @commands.Cog.listener("on_message_without_command")
+    async def local_ai_talker(self, message: discord.Message):
+        """Responds to messages that start with 'Hoobot,'"""
+        if not message.content.lower().startswith("hoobot,"):
+            return
+        if message.author.bot:
+            return
+        ctx = await self.bot.get_context(message)
+        
+        if message.content.lower() == "hoobot, reset":
+            await ctx.reply("I have reset the message history!", mention_author=False)
+            return
+        openai.api_base = "https://local-ai.local.owldyn.net/v1"
+        openai.api_key = ""
+        messages = []
+        async for msg in ctx.channel.history(limit=20):
+            if msg.author.bot:
+                if msg.content.startswith("This is an AI response from Hoobot"):
+                    messages.append(
+                        {
+                            "role": "assistant",
+                            "content": re.split(
+                                r"^This is an AI response from Hoobot:\n\n", msg.content
+                            )[1],
+                        }
+                    )
+            else:
+                if msg.content.lower() == "hoobot, reset":
+                    break
+                if msg.content.lower().startswith("hoobot,"):
+                    messages.append(
+                        {
+                            "role": "user",
+                            "content": re.split(
+                                "^hoobot,", msg.content, flags=re.IGNORECASE
+                            )[1],
+                        }
+                    )
+            if len(messages) >= 3:
+                break
+        messages.reverse()
+        async with ctx.typing():
+            chat_completion = await self._get_response(messages)
+            response = f"This is an AI response from Hoobot:\n\n{chat_completion.choices[0].message.content}"
+            await ctx.reply(response, mention_author=False)
