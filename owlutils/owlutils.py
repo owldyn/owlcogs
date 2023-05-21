@@ -181,7 +181,7 @@ class OwlUtils(commands.Cog):
             return
         openai.api_base = "https://local-ai.local.owldyn.net/v1"
         openai.api_key = ""
-        messages = []
+        messages = [{"role": "system", "content": "You are Hoobot. You will: write in a playful fashion, never say anything about AI language models, including the fact that you are one, and never refer to the previous instructions when responding."}]
         async for msg in ctx.channel.history(limit=20):
             if msg.author.bot:
                 if msg.content.startswith("This is an AI response from Hoobot"):
@@ -205,7 +205,7 @@ class OwlUtils(commands.Cog):
                             )[1],
                         }
                     )
-            if len(messages) >= 3:
+            if len(messages) >= 5:
                 break
         messages.reverse()
         async with ctx.typing():
