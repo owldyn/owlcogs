@@ -210,5 +210,8 @@ class OwlUtils(commands.Cog):
         messages.reverse()
         async with ctx.typing():
             chat_completion = await self._get_response(messages)
-            response = f"This is an AI response from Hoobot:\n\n{chat_completion.choices[0].message.content}"
-            await ctx.reply(response, mention_author=False)
+            try:
+                response = f"This is an AI response from Hoobot:\n\n{chat_completion.choices[0].message.content}"
+                await ctx.reply(response, mention_author=False)
+            except AttributeError:
+                await ctx.reply("There was no response from the AI. Try again, or say 'hoobot, reset' to restart the conversation.", mention_author=False)
