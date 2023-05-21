@@ -201,7 +201,7 @@ class OwlUtils(commands.Cog):
                         {
                             "role": "user",
                             "content": re.split(
-                                "^hoobot,", msg.content, flags=re.IGNORECASE
+                                "^hoobot, ?", msg.content, flags=re.IGNORECASE
                             )[1],
                         }
                     )
