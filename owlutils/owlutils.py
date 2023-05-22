@@ -1,8 +1,10 @@
 import re
+import time
 from tempfile import NamedTemporaryFile
+
 import discord
 import openai
-from redbot.core import commands, Config
+from redbot.core import Config, commands
 from redbot.core.commands import Context
 
 from .calculate import Calculator
@@ -22,7 +24,6 @@ class OwlUtils(commands.Cog):
             "model": "ggml-gpt4all-j.bin",
             "url": "",
             "api_key": "",
-            "system_message": None,
         }
     }
 
@@ -221,6 +222,7 @@ class OwlUtils(commands.Cog):
         ctx = await self.bot.get_context(message)
 
         if message.content.lower() == f"{check_name} reset":
+            self.ai_system_message = str(time.time_ns())
             await ctx.message.add_reaction(self.CHECK_MARK)
             return
 
