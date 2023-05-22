@@ -227,13 +227,6 @@ class OwlUtils(commands.Cog):
             return
 
         messages = []
-        if self.ai_system_message:
-            messages.append(
-                {
-                    "role": "system",
-                    "content": self.ai_system_message,
-                }
-            )
         async for msg in ctx.channel.history(limit=20):
             if msg.author.bot:
                 if msg.content.startswith("This is an AI response from Hoobot"):
@@ -260,7 +253,15 @@ class OwlUtils(commands.Cog):
                     )
             if len(messages) >= 5:
                 break
+        if self.ai_system_message:
+            messages.append(
+                {
+                    "role": "system",
+                    "content": self.ai_system_message,
+                }
+            )
         messages.reverse()
+
         async with ctx.typing():
             chat_completion = await openai.ChatCompletion.acreate(
                 model=self.ai_model, messages=messages
