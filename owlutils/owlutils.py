@@ -22,6 +22,7 @@ class OwlUtils(commands.Cog):
             "model": "ggml-gpt4all-j.bin",
             "url": "",
             "api_key": "",
+            "system_message": None,
         }
     }
 
@@ -40,7 +41,7 @@ class OwlUtils(commands.Cog):
             openai.api_key = config.get("api_key")
             self.ai_name = config.get("name")
             self.ai_model = config.get("model")
-            self.ai_system_message = f"Refer to yourself as {self.ai_name}"
+            self.ai_system_message = config.get("system_message")
 
     @commands.is_owner()
     @commands.command()
@@ -54,6 +55,9 @@ class OwlUtils(commands.Cog):
                 )
             if setting_name == "enabled":
                 value = bool(value.lower() == "true")
+            if setting_name == "system_message":
+                if value.lower() == "none":
+                    value = None
             config[setting_name] = value
         await self.set_settings()
         await ctx.message.add_reaction(self.CHECK_MARK)
@@ -220,12 +224,14 @@ class OwlUtils(commands.Cog):
             await ctx.message.add_reaction(self.CHECK_MARK)
             return
 
-        messages = [
-            {
-                "role": "system",
-                "content": self.ai_system_message,
-            }
-        ]
+        messages = []
+        if self.ai_system_message:
+            messages.append(
+                {
+                    "role": "system",
+                    "content": self.ai_system_message,
+                }
+            )
         async for msg in ctx.channel.history(limit=20):
             if msg.author.bot:
                 if msg.content.startswith("This is an AI response from Hoobot"):
