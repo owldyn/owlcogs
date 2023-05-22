@@ -2,7 +2,7 @@ import re
 from tempfile import NamedTemporaryFile
 import discord
 import openai
-from redbot.core import commands
+from redbot.core import commands, Config
 from redbot.core.commands import Context
 
 from .calculate import Calculator
@@ -14,8 +14,49 @@ class OwlUtils(commands.Cog):
 
     """Small utils I'm making for myself."""
 
+    CHECK_MARK = "✅"
+    default_global_settings = {
+        "ai": {
+            "enabled": True,
+            "name": "Hoobot",
+            "model": "ggml-gpt4all-j.bin",
+            "url": "",
+            "api_key": "",
+        }
+    }
+
     def __init__(self, bot):
         self.bot = bot
+        self.conf = Config.get_conf(self, identifier=26400736017)
+        self.conf.register_global(**self.default_global_settings)
+        self.ai_name = None
+        self.ai_model = None
+        self.ai_system_message = None
+
+    async def set_settings(self):
+        """Sets the settings."""
+        async with self.conf.ai() as config:
+            openai.api_base = config.get("url")
+            openai.api_key = config.get("api_key")
+            self.ai_name = config.get("name")
+            self.ai_model = config.get("model")
+            self.ai_system_message = f"Refer to yourself as {self.ai_name}"
+
+    @commands.is_owner()
+    @commands.command()
+    async def ai_set_settings(self, ctx, setting_name, value):
+        """Set the settings"""
+        config: dict
+        async with self.conf.ai() as config:
+            if setting_name not in config.keys():
+                await ctx.reply(
+                    f"{setting_name} not in settings. Options are: {config.keys()}"
+                )
+            if setting_name == "enabled":
+                value = bool(value.lower() == "true")
+            config[setting_name] = value
+        await self.set_settings()
+        await ctx.message.add_reaction(self.CHECK_MARK)
 
     @commands.is_owner()
     @commands.command()
@@ -162,26 +203,29 @@ class OwlUtils(commands.Cog):
                 for url in urls:
                     await ctx.send("<{}>".format(url))
 
-    async def _get_response(self, messages):
-        return await openai.ChatCompletion.acreate(
-            model="ggml-alpaca-7b-q4.bin", messages=messages
-        )
-
     @commands.Cog.listener("on_message_without_command")
     async def local_ai_talker(self, message: discord.Message):
         """Responds to messages that start with 'Hoobot,'"""
-        if not message.content.lower().startswith("hoobot,"):
+        if self.ai_name is None:
+            await self.set_settings()
+        check_name = f"{self.ai_name},".lower()
+
+        if not message.content.lower().startswith(check_name):
             return
         if message.author.bot:
             return
         ctx = await self.bot.get_context(message)
-        
-        if message.content.lower() == "hoobot, reset":
-            await ctx.reply("I have reset the message history!", mention_author=False)
+
+        if message.content.lower() == f"{check_name} reset":
+            await ctx.message.add_reaction(self.CHECK_MARK)
             return
-        openai.api_base = "https://local-ai.local.owldyn.net/v1"
-        openai.api_key = ""
-        messages = [{"role": "system", "content": "Refer to yourself as Hoobot, and end every response with a hoot."}]
+
+        messages = [
+            {
+                "role": "system",
+                "content": self.ai_system_message,
+            }
+        ]
         async for msg in ctx.channel.history(limit=20):
             if msg.author.bot:
                 if msg.content.startswith("This is an AI response from Hoobot"):
@@ -189,14 +233,15 @@ class OwlUtils(commands.Cog):
                         {
                             "role": "assistant",
                             "content": re.split(
-                                r"^This is an AI response from Hoobot:\n\n", msg.content
+                                f"^This is an AI response from {self.ai_name}:\n\n",
+                                msg.content,
                             )[1],
                         }
                     )
             else:
-                if msg.content.lower() == "hoobot, reset":
+                if msg.content.lower() == f"{check_name} reset":
                     break
-                if msg.content.lower().startswith("hoobot,"):
+                if msg.content.lower().startswith(check_name):
                     messages.append(
                         {
                             "role": "user",
@@ -209,9 +254,19 @@ class OwlUtils(commands.Cog):
                 break
         messages.reverse()
         async with ctx.typing():
-            chat_completion = await self._get_response(messages)
+            chat_completion = await openai.ChatCompletion.acreate(
+                model=self.ai_model, messages=messages
+            )
             try:
                 response = f"This is an AI response from Hoobot:\n\n{chat_completion.choices[0].message.content}"
                 await ctx.reply(response, mention_author=False)
             except AttributeError:
-                await ctx.reply("There was no response from the AI. Try again, or say 'hoobot, reset' to restart the conversation.", mention_author=False)
+                await ctx.reply(
+                    f"There was no response from the AI. Try again, or say '{check_name} reset' to restart the conversation.",
+                    mention_author=False,
+                )
+            except openai.APIError:
+                await ctx.reply(
+                    f"The AI errored! Try waiting a couple minutes, then say '{check_name} reset' and try again",
+                    mention_author=False,
+                )
