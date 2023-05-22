@@ -164,7 +164,7 @@ class OwlUtils(commands.Cog):
 
     async def _get_response(self, messages):
         return await openai.ChatCompletion.acreate(
-            model="ggml-gpt4all-j.bin", messages=messages
+            model="ggml-alpaca-7b-q4.bin", messages=messages
         )
 
     @commands.Cog.listener("on_message_without_command")
