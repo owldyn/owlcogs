@@ -227,23 +227,19 @@ class OwlUtils(commands.Cog):
             return
 
         messages = []
-        if self.ai_system_message:
-            messages.append(
-                {
-                    "role": "system",
-                    "content": self.ai_system_message,
-                }
-            )
         async for msg in ctx.channel.history(limit=20):
+            if message.id == msg.id: # We want to add the actual prompt later.
+                continue
             if msg.author.bot:
                 if msg.content.startswith("This is an AI response from Hoobot"):
                     messages.append(
                         {
-                            "role": "assistant",
+                            "role": "system",
                             "content": re.split(
                                 f"^This is an AI response from {self.ai_name}:\n\n",
                                 msg.content,
                             )[1],
+                            "name": msg.author.name
                         }
                     )
             else:
@@ -252,18 +248,33 @@ class OwlUtils(commands.Cog):
                 if msg.content.lower().startswith(check_name):
                     messages.append(
                         {
-                            "role": "user",
+                            "role": "system",
                             "content": re.split(
                                 "^hoobot, ?", msg.content, flags=re.IGNORECASE
                             )[1],
+                            "name": msg.author.name
                         }
                     )
             if len(messages) >= 5:
                 break
+        if self.ai_system_message:
+            messages.append(
+                {
+                    "role": "system",
+                    "content": self.ai_system_message,
+                }
+            )
         messages.reverse()
+        messages.append(                        {
+                            "role": "user",
+                            "content": re.split(
+                                "^hoobot, ?", message.content, flags=re.IGNORECASE
+                            )[1],
+                            "name": message.author.name
+                        })
         async with ctx.typing():
             chat_completion = await openai.ChatCompletion.acreate(
-                model=self.ai_model, messages=messages
+                model=self.ai_model, messages=messages, frequency_pentalty=1.2, stop="### Response:"
             )
             try:
                 response = f"This is an AI response from Hoobot:\n\n{chat_completion.choices[0].message.content}"
