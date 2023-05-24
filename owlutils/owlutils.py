@@ -24,6 +24,7 @@ class OwlUtils(commands.Cog):
             "model": "ggml-gpt4all-j.bin",
             "url": "",
             "api_key": "",
+            "system_message": None
         }
     }
 
@@ -222,7 +223,6 @@ class OwlUtils(commands.Cog):
         ctx = await self.bot.get_context(message)
 
         if message.content.lower() == f"{check_name} reset":
-            self.ai_system_message = str(time.time_ns())
             await ctx.message.add_reaction(self.CHECK_MARK)
             return
 
