@@ -327,6 +327,20 @@ class OwlUtils(commands.Cog):
         await ctx.message.add_reaction(self.CHECK_MARK)
 
     @list_parent.command()
+    async def add(self, ctx: Context, list_name: str, *, values: str):
+        """Add a comma separated list of values to the list"""
+        async with self.conf.list() as list_conf:
+            aid = str(ctx.author.id)
+            user_conf = list_conf.get(aid, {})
+            if user_conf.get(list_name):
+                user_conf[list_name].append(values)
+            else:
+                user_conf[list_name] = [values]
+            list_conf[aid] = user_conf
+
+        await ctx.message.add_reaction(self.CHECK_MARK)
+
+    @list_parent.command()
     async def pop(self, ctx: Context, list_name: str):
         """Remove and send the next item in the list"""
         async with self.conf.list() as list_conf:
