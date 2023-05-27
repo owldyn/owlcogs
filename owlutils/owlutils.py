@@ -1,5 +1,6 @@
 import re
 import time
+from collections import defaultdict
 from tempfile import NamedTemporaryFile
 
 import discord
@@ -24,8 +25,9 @@ class OwlUtils(commands.Cog):
             "model": "ggml-gpt4all-j.bin",
             "url": "",
             "api_key": "",
-            "system_message": None
-        }
+            "system_message": None,
+        },
+        "list": {},
     }
 
     def __init__(self, bot):
@@ -110,6 +112,7 @@ class OwlUtils(commands.Cog):
 
     @commands.Cog.listener("on_message_without_command")
     async def calculate(self, message):
+        """Calculate math from a given message."""
         if message.author.bot:
             return
         msg_content = message.content.lower()
@@ -228,7 +231,7 @@ class OwlUtils(commands.Cog):
 
         messages = []
         async for msg in ctx.channel.history(limit=20):
-            if message.id == msg.id: # We want to add the actual prompt later.
+            if message.id == msg.id:  # We want to add the actual prompt later.
                 continue
             if msg.author.bot:
                 if msg.content.startswith("This is an AI response from Hoobot"):
@@ -239,7 +242,7 @@ class OwlUtils(commands.Cog):
                                 f"^This is an AI response from {self.ai_name}:\n\n",
                                 msg.content,
                             )[1],
-                            "name": msg.author.name
+                            "name": msg.author.name,
                         }
                     )
             else:
@@ -252,7 +255,7 @@ class OwlUtils(commands.Cog):
                             "content": re.split(
                                 "^hoobot, ?", msg.content, flags=re.IGNORECASE
                             )[1],
-                            "name": msg.author.name
+                            "name": msg.author.name,
                         }
                     )
             if len(messages) >= 5:
@@ -265,16 +268,21 @@ class OwlUtils(commands.Cog):
                 }
             )
         messages.reverse()
-        messages.append(                        {
-                            "role": "user",
-                            "content": re.split(
-                                "^hoobot, ?", message.content, flags=re.IGNORECASE
-                            )[1],
-                            "name": message.author.name
-                        })
+        messages.append(
+            {
+                "role": "user",
+                "content": re.split("^hoobot, ?", message.content, flags=re.IGNORECASE)[
+                    1
+                ],
+                "name": message.author.name,
+            }
+        )
         async with ctx.typing():
             chat_completion = await openai.ChatCompletion.acreate(
-                model=self.ai_model, messages=messages, frequency_pentalty=1.2, stop="### Response:"
+                model=self.ai_model,
+                messages=messages,
+                frequency_pentalty=1.2,
+                stop="### Response:",
             )
             try:
                 response = f"This is an AI response from Hoobot:\n\n{chat_completion.choices[0].message.content}"
@@ -289,3 +297,57 @@ class OwlUtils(commands.Cog):
                     f"The AI errored! Try waiting a couple minutes, then say '{check_name} reset' and try again",
                     mention_author=False,
                 )
+
+    @commands.group("list")
+    async def list_parent(self, ctx):
+        """Commands to make a list and print it out"""
+
+    @list_parent.command()
+    async def bset(self, ctx: Context, list_name: str, *, values: str):
+        """Add a comma separated list of values to the list"""
+        async with self.conf.list() as list_conf:
+            aid = ctx.author.id
+            user_conf = list_conf.get(aid, {})
+            user_conf[list_name] = values.split(",")
+            list_conf[aid] = user_conf
+        await ctx.message.add_reaction(self.CHECK_MARK)
+
+    @list_parent.command()
+    async def badd(self, ctx: Context, list_name: str, *, values: str):
+        """Add a comma separated list of values to the list"""
+        async with self.conf.list() as list_conf:
+            aid = str(ctx.author.id)
+            user_conf = list_conf.get(aid, {})
+            if user_conf.get(list_name):
+                user_conf[list_name].extend(values.split(","))
+            else:
+                user_conf[list_name] = values.split(",")
+            list_conf[aid] = user_conf
+
+        await ctx.message.add_reaction(self.CHECK_MARK)
+
+    @list_parent.command()
+    async def pop(self, ctx: Context, list_name: str):
+        """Remove and send the next item in the list"""
+        async with self.conf.list() as list_conf:
+            aid = str(ctx.author.id)
+            try:
+                value = list_conf.get(aid, {}).get(list_name, []).pop(0)
+            except IndexError:
+                await ctx.reply(
+                    "List is empty or does not exist!", mention_author=False
+                )
+                return
+            await ctx.reply(value, mention_author=False)
+
+    @list_parent.command()
+    async def show(self, ctx: Context):
+        """Show all of your lists"""
+        async with self.conf.list() as list_conf:
+            aid = str(ctx.author.id)
+            lists = list(list_conf.get(aid, {}).keys())
+            newline = r"\n"
+            await ctx.reply(
+                f"```{newline.join(lists)}```" if lists else "You have no lists!",
+                mention_author=False,
+            )
