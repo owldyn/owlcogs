@@ -3,3 +3,4 @@ youtube_dl
 tweepy
 pixiv-api
 praw
+epicstore_api
