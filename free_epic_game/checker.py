@@ -6,7 +6,6 @@ from discord.ext import tasks
 from epicstore_api import EpicGamesStoreAPI
 from redbot.core import Config, app_commands, commands
 from redbot.core.bot import Red
-from redbot.core.commands import Context
 
 from .dataclasses import GameInfo
 

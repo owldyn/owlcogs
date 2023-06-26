@@ -1,6 +1,6 @@
 {
   "requirements": [
-    "epicgames_api",
+    "epicstore_api",
     "jsonpath_ng"
   ]
 }
