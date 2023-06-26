@@ -355,13 +355,25 @@ class OwlUtils(commands.Cog):
             await ctx.reply(value, mention_author=False)
 
     @list_parent.command()
-    async def show(self, ctx: Context):
-        """Show all of your lists"""
+    async def list(self, ctx: Context):
+        """list all of your lists"""
         async with self.conf.list() as list_conf:
             aid = str(ctx.author.id)
             lists = list(list_conf.get(aid, {}).keys())
-            newline = r"\n"
+            newline = "\n"
             await ctx.reply(
                 f"```{newline.join(lists)}```" if lists else "You have no lists!",
+                mention_author=False,
+            )
+
+    @list_parent.command()
+    async def show(self, ctx: Context, list_name: str):
+        """list items in a list"""
+        async with self.conf.list() as list_conf:
+            aid = str(ctx.author.id)
+            lst = list_conf.get(aid, {}).get(list_name)
+            newline = "\n"
+            await ctx.reply(
+                f"```{newline.join(lst)}```" if lst else f"List {list_name} is empty!",
                 mention_author=False,
             )
