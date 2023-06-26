@@ -21,12 +21,7 @@ class GameInfo:
     @classmethod
     def make_from_response(cls, response) -> List["GameInfo"]:
         """Builds a list of this class from the Epic free games response"""
-        games = (
-            response.get("data", {})
-            .get("Catalog")
-            .get("searchStore", {})
-            .get("elements", [])
-        )
+        games = response.get("data", {}).get("Catalog").get("searchStore", {}).get("elements", [])
         infos = []
         for game in games:
             parser_now = parse(
@@ -47,8 +42,7 @@ class GameInfo:
                 for g in parser_now.find(game)
             ]
             end_dates = [
-                g.context.context.value.get("endDate").split(".")[0]
-                for g in parser_now.find(game)
+                g.context.context.value.get("endDate").split(".")[0] for g in parser_now.find(game)
             ]
 
             image_urls = [
@@ -60,7 +54,7 @@ class GameInfo:
 
             info_dict = {
                 "game_id": game.get("id"),
-                "title": game.get("title"),
+                "title": f"Free on Epic: {game.get('title')}",
                 "desc": game.get("description"),
                 "url": f"https://store.epicgames.com/en-US/p/{game.get('productSlug')}",
                 "start_date": datetime.strptime(start_dates[0], "%Y-%m-%dT%H:%M:%S")
