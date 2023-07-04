@@ -1,11 +1,9 @@
 import re
-import time
-from collections import defaultdict
 from tempfile import NamedTemporaryFile
 
 import discord
 import openai
-from redbot.core import Config, commands
+from redbot.core import Config, app_commands, commands
 from redbot.core.commands import Context
 
 from .calculate import Calculator
@@ -54,9 +52,7 @@ class OwlUtils(commands.Cog):
         config: dict
         async with self.conf.ai() as config:
             if setting_name not in config.keys():
-                await ctx.reply(
-                    f"{setting_name} not in settings. Options are: {config.keys()}"
-                )
+                await ctx.reply(f"{setting_name} not in settings. Options are: {config.keys()}")
             if setting_name == "enabled":
                 value = bool(value.lower() == "true")
             if setting_name == "system_message":
@@ -141,9 +137,7 @@ class OwlUtils(commands.Cog):
         file_names = []
         reply = None
         for file in message.attachments:
-            if True in [
-                file_ext in file.filename for file_ext in [".mp4", ".mkv", "webm"]
-            ]:
+            if True in [file_ext in file.filename for file_ext in [".mp4", ".mkv", "webm"]]:
                 if "SPOILER_" in file.filename:
                     file_names.append(f"||{file.filename}||")
                 else:
@@ -158,9 +152,7 @@ class OwlUtils(commands.Cog):
     async def script_all_links(self, ctx: Context, user=None):
         """Grabs all link in the channel (optionally from specified user)."""
         if not ctx.channel:
-            await ctx.reply(
-                "This can only be sent in a server channel.", mention_author=False
-            )
+            await ctx.reply("This can only be sent in a server channel.", mention_author=False)
         edit: discord.Message = await ctx.reply(
             "Grabbing all messages. This will probably take a while.",
             mention_author=False,
@@ -252,9 +244,7 @@ class OwlUtils(commands.Cog):
                     messages.append(
                         {
                             "role": "system",
-                            "content": re.split(
-                                "^hoobot, ?", msg.content, flags=re.IGNORECASE
-                            )[1],
+                            "content": re.split("^hoobot, ?", msg.content, flags=re.IGNORECASE)[1],
                             "name": msg.author.name,
                         }
                     )
@@ -271,9 +261,7 @@ class OwlUtils(commands.Cog):
         messages.append(
             {
                 "role": "user",
-                "content": re.split("^hoobot, ?", message.content, flags=re.IGNORECASE)[
-                    1
-                ],
+                "content": re.split("^hoobot, ?", message.content, flags=re.IGNORECASE)[1],
                 "name": message.author.name,
             }
         )
@@ -298,82 +286,122 @@ class OwlUtils(commands.Cog):
                     mention_author=False,
                 )
 
-    @commands.group("list")
-    async def list_parent(self, ctx):
-        """Commands to make a list and print it out"""
+    def make_list_embed(self, list_name, lst):
+        """Returns an embed for the list"""
+        return discord.Embed(title=list_name, description="\n".join(lst))
 
-    @list_parent.command()
-    async def bset(self, ctx: Context, list_name: str, *, values: str):
-        """Add a comma separated list of values to the list"""
+    @commands.hybrid_group(
+        name="list",
+        description="Make and print lists",
+    )
+    async def owl_list(self, ctx):
+        """This is now a slash command! use /list now"""
+
+    @owl_list.app_command.command(
+        name="create",
+        description="Create a list",
+    )
+    async def create(self, ctx: discord.Interaction, list_name: str):
+        """Create a list"""
         async with self.conf.list() as list_conf:
-            aid = ctx.author.id
+            aid = str(ctx.user.id)
             user_conf = list_conf.get(aid, {})
+            if user_conf.get(list_name):
+                await ctx.response.send_message("List already exists!", ephemeral=True)
+                return
+            user_conf[list_name] = []
+            list_conf[aid] = user_conf
+        await ctx.response.send_message("Done!", ephemeral=True)
+
+    @owl_list.app_command.command(
+        name="bulk_set",
+        description="set the list with a comma separated values list",
+    )
+    async def bset(self, ctx: discord.Interaction, list_name: str, *, values: str):
+        """Set a comma separated list of values to the list"""
+        async with self.conf.list() as list_conf:
+            aid = str(ctx.user.id)
+            user_conf = list_conf.get(aid, {})
+            if user_conf.get(list_name) is None:
+                await ctx.response.send_message("List doesn't already exist!", ephemeral=True)
+                return
             user_conf[list_name] = values.split(",")
             list_conf[aid] = user_conf
-        await ctx.message.add_reaction(self.CHECK_MARK)
+        await ctx.response.send_message(
+            embed=self.make_list_embed(list_name, user_conf[list_name]), ephemeral=True
+        )
 
-    @list_parent.command()
-    async def badd(self, ctx: Context, list_name: str, *, values: str):
+    @owl_list.app_command.command(
+        name="add",
+        description="add to the list with a comma separated values list",
+    )
+    async def badd(self, ctx: discord.Interaction, list_name: str, *, values: str):
         """Add a comma separated list of values to the list"""
         async with self.conf.list() as list_conf:
-            aid = str(ctx.author.id)
+            aid = str(ctx.user.id)
             user_conf = list_conf.get(aid, {})
-            if user_conf.get(list_name):
-                user_conf[list_name].extend(values.split(","))
-            else:
-                user_conf[list_name] = values.split(",")
+            if user_conf.get(list_name) is None:
+                await ctx.response.send_message("List doesn't already exist!", ephemeral=True)
+                return
+            user_conf[list_name].extend(values.split(","))
             list_conf[aid] = user_conf
+        await ctx.response.send_message(
+            embed=self.make_list_embed(list_name, user_conf[list_name]), ephemeral=True
+        )
 
-        await ctx.message.add_reaction(self.CHECK_MARK)
-
-    @list_parent.command()
-    async def add(self, ctx: Context, list_name: str, *, values: str):
-        """Add a comma separated list of values to the list"""
+    @owl_list.app_command.command(
+        name="add_single",
+        description="add to the list",
+    )
+    async def sadd(self, ctx: discord.Interaction, list_name: str, *, values: str):
+        """Add a single values to the list"""
         async with self.conf.list() as list_conf:
-            aid = str(ctx.author.id)
+            aid = str(ctx.user.id)
             user_conf = list_conf.get(aid, {})
-            if user_conf.get(list_name):
-                user_conf[list_name].append(values)
-            else:
-                user_conf[list_name] = [values]
+            if user_conf.get(list_name) is None:
+                await ctx.response.send_message("List doesn't already exist!", ephemeral=True)
+                return
+            user_conf[list_name].append(values)
             list_conf[aid] = user_conf
+        await ctx.response.send_message(
+            embed=self.make_list_embed(list_name, user_conf[list_name]), ephemeral=True
+        )
 
-        await ctx.message.add_reaction(self.CHECK_MARK)
-
-    @list_parent.command()
+    @owl_list.app_command.command()
     async def pop(self, ctx: Context, list_name: str):
         """Remove and send the next item in the list"""
         async with self.conf.list() as list_conf:
-            aid = str(ctx.author.id)
+            aid = str(ctx.user.id)
             try:
                 value = list_conf.get(aid, {}).get(list_name, []).pop(0)
             except IndexError:
-                await ctx.reply(
-                    "List is empty or does not exist!", mention_author=False
+                await ctx.response.send_message(
+                    f"List {list_name} is empty or does not exist!", ephemeral=False
                 )
                 return
-            await ctx.reply(value, mention_author=False)
+        await ctx.response.send_message(value, ephemeral=False)
 
-    @list_parent.command()
+    @owl_list.app_command.command()
     async def list(self, ctx: Context):
         """list all of your lists"""
         async with self.conf.list() as list_conf:
-            aid = str(ctx.author.id)
-            lists = list(list_conf.get(aid, {}).keys())
-            newline = "\n"
-            await ctx.reply(
-                f"```{newline.join(lists)}```" if lists else "You have no lists!",
-                mention_author=False,
+            aid = str(ctx.user.id)
+            lst = list_conf.get(aid, {})
+            await ctx.response.send_message(
+                embed=self.make_list_embed("All lists", lst), ephemeral=True
             )
 
-    @list_parent.command()
+    @owl_list.app_command.command()
     async def show(self, ctx: Context, list_name: str):
         """list items in a list"""
         async with self.conf.list() as list_conf:
-            aid = str(ctx.author.id)
+            aid = str(ctx.user.id)
             lst = list_conf.get(aid, {}).get(list_name)
-            newline = "\n"
-            await ctx.reply(
-                f"```{newline.join(lst)}```" if lst else f"List {list_name} is empty!",
-                mention_author=False,
+            if lst is None:
+                await ctx.response.send_message(
+                    f"List {list_name} is empty or does not exist!", ephemeral=True
+                )
+                return
+            await ctx.response.send_message(
+                embed=self.make_list_embed(list_name, lst), ephemeral=True
             )
