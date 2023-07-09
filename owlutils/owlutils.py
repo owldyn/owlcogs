@@ -4,7 +4,6 @@ from tempfile import NamedTemporaryFile
 
 import discord
 from redbot.core import Config, app_commands, commands
-from redbot.core.commands import Context
 
 from .calculate import Calculator
 from .list import ListMixin
@@ -121,9 +120,7 @@ class OwlUtils(LLMMixin, ListMixin, commands.Cog):
                 links.extend(matches)
                 count += 1
             if message.attachments:
-                attachments = [
-                    a.proxy_url for a in message.attachments if "image" in a.content_type
-                ]
+                attachments = [a.proxy_url for a in message.attachments]
                 links.extend(attachments)
                 count += len(attachments)
         with NamedTemporaryFile("r+") as script:
