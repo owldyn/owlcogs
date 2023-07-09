@@ -38,6 +38,10 @@ class OwlUtils(LLMMixin, ListMixin, commands.Cog):
         self.ai_model = None
         self.ai_system_message = None
         self.log = logging.getLogger("OwlUtils")
+        self.ctx_menu = app_commands.ContextMenu(
+            name="Get Tenor Link", callback=self.tenor_context
+        )
+        self.bot.tree.add_command(self.ctx_menu)
 
     @commands.Cog.listener("on_message_without_command")
     async def calculate(self, message):
@@ -133,6 +137,13 @@ class OwlUtils(LLMMixin, ListMixin, commands.Cog):
                 ephemeral=True,
                 file=file,
             )
+
+    async def tenor_context(self, ctx: discord.Interaction, message: discord.Message):
+        """Right click to get the gif link from tenor"""
+        if "tenor.com" in message.content:
+            await ctx.response.send_message(f"<{message.content}>", ephemeral=True)
+        else:
+            await ctx.response.send_message("No tenor gifs found in that message.", ephemeral=True)
 
     @commands.command()
     async def tenor(self, ctx):
