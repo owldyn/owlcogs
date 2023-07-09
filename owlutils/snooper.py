@@ -52,7 +52,6 @@ class StatusSnooper(commands.Cog):
                         "timestamp": int(time.time()),
                     }
                 )
-            self.log.debug(current_data)
             users[user_id] = current_data
 
     def _init_user(self, current_data):
