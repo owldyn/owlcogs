@@ -1,3 +1,4 @@
+import logging
 import re
 from tempfile import NamedTemporaryFile
 
@@ -36,6 +37,7 @@ class OwlUtils(LLMMixin, ListMixin, commands.Cog):
         self.ai_name = None
         self.ai_model = None
         self.ai_system_message = None
+        self.log = logging.getLogger("OwlUtils")
 
     @commands.Cog.listener("on_message_without_command")
     async def calculate(self, message):
@@ -79,38 +81,58 @@ class OwlUtils(LLMMixin, ListMixin, commands.Cog):
         if reply:
             await ctx.reply(reply, mention_author=False)
 
-    @commands.command()
-    async def script_all_links(self, ctx: Context, user=None):
+    async def get_users(self, ctx: discord.Interaction, current: str):
+        """Gets users in the channel for completion"""
+        self.log.debug(
+            [member.mention for member in ctx.channel.members if current in member.display_name]
+        )
+        return [
+            app_commands.Choice(name=member.display_name, value=member.mention)
+            for member in ctx.channel.members
+            if not current or current in member.display_name
+        ]
+
+    @app_commands.command(
+        name="script_all_links", description="Make a script to download all links in this channel"
+    )
+    @app_commands.autocomplete(user=get_users)
+    async def script_all_links(self, ctx: discord.Interaction, user: str = None):
         """Grabs all link in the channel (optionally from specified user)."""
         if not ctx.channel:
-            await ctx.reply("This can only be sent in a server channel.", mention_author=False)
-        edit: discord.Message = await ctx.reply(
+            await ctx.response.send_message(
+                "This can only be sent in a server channel.", ephemeral=True
+            )
+        await ctx.response.send_message(
             "Grabbing all messages. This will probably take a while.",
-            mention_author=False,
+            ephemeral=True,
         )
-        async with ctx.typing():
-            count = 0
-            links = []
-            message: discord.Message
-            async for message in ctx.channel.history(limit=None):
-                if user:
-                    if message.author.mention != user:
-                        continue
-                if matches := re.findall(r"https?://[^ ]*", message.content):
-                    links.extend(matches)
-                    count += 1
-            with NamedTemporaryFile("r+") as script:
-                for link in links:
-                    script.write(f'curl "{link}" --remote-name\n')
-                script.write("pause")
-                script.seek(0)
-                file = discord.File(fp=script.file, filename="download_links.bat")
-                await edit.delete()
-                await ctx.reply(
-                    f"Found {count} messages with links, for a total of {len(links)} links.",
-                    mention_author=False,
-                    file=file,
-                )
+        count = 0
+        links = []
+        message: discord.Message
+        async for message in ctx.channel.history(limit=None):
+            if user:
+                if message.author.mention != user:
+                    continue
+            if matches := re.findall(r"https?://[^ ]*", message.content):
+                links.extend(matches)
+                count += 1
+            if message.attachments:
+                attachments = [
+                    a.proxy_url for a in message.attachments if "image" in a.content_type
+                ]
+                links.extend(attachments)
+                count += len(attachments)
+        with NamedTemporaryFile("r+") as script:
+            for link in links:
+                script.write(f'curl "{link}" --remote-name\n')
+            script.write("pause")
+            script.seek(0)
+            file = discord.File(fp=script.file, filename="download_links.bat")
+            await ctx.followup.send(
+                f"Found {count} messages with links, for a total of {len(links)} links.",
+                ephemeral=True,
+                file=file,
+            )
 
     @commands.command()
     async def tenor(self, ctx):
