@@ -152,6 +152,6 @@ class StatusSnooper(commands.Cog):
             )
             return
         await ctx.reply(
-            f"{member.display_name} was last online at <t:{last.get('timestamp')}:R>.",
+            f"{member.display_name} was last online <t:{last.get('timestamp')}:R>.",
             mention_author=False,
         )
