@@ -62,50 +62,6 @@ class OwlUtils(commands.Cog):
         await self.set_settings()
         await ctx.message.add_reaction(self.CHECK_MARK)
 
-    @commands.is_owner()
-    @commands.command()
-    async def portainer(self, ctx, hostname, port):
-        """create portainer labels for traefik"""
-        config = f"""```      networks:
-      - proxy
-      - default
-    labels:
-        - "traefik.enable=true"
-        # Remove below for external only
-        - "traefik.http.routers.{hostname}.entrypoints=http"
-        - "traefik.http.routers.{hostname}.service={hostname}"
-        - "traefik.http.routers.{hostname}.rule=Host(`{hostname}.local.owldyn.net`)"
-        - "traefik.http.middlewares.{hostname}-https-redirect.redirectscheme.scheme=https"
-        - "traefik.http.routers.{hostname}.middlewares={hostname}-https-redirect"
-        - "traefik.http.routers.{hostname}-secure.entrypoints=https"
-        - "traefik.http.routers.{hostname}-secure.rule=Host(`{hostname}.local.owldyn.net`)"
-        - "traefik.http.routers.{hostname}-secure.tls=true"
-        - "traefik.http.routers.{hostname}-secure.service={hostname}"
-        - "traefik.http.services.{hostname}.loadbalancer.server.port={port}"
-        - "traefik.http.routers.{hostname}-secure.middlewares=secured@file" #, authelia@docker" # Uncomment for authelia"
-        - "traefik.docker.network=proxy"
-        ```"""
-        config2 = f"""```
-        # Remove below for local only
-        - "traefik.http.routers.{hostname}-external.entrypoints=http"
-        - "traefik.http.routers.{hostname}-external.service={hostname}-external"
-        - "traefik.http.routers.{hostname}-external.rule=Host(`{hostname}.owldyn.net`)"
-        - "traefik.http.middlewares.{hostname}-external-https-redirect.redirectscheme.scheme=https"
-        - "traefik.http.routers.{hostname}-external.middlewares={hostname}-https-redirect"
-        - "traefik.http.routers.{hostname}-external-secure.entrypoints=https"
-        - "traefik.http.routers.{hostname}-external-secure.rule=Host(`{hostname}.owldyn.net`)"
-        - "traefik.http.routers.{hostname}-external-secure.tls=true"
-        - "traefik.http.routers.{hostname}-external-secure.service={hostname}-external"
-        - "traefik.http.services.{hostname}-external.loadbalancer.server.port={port}"
-        #- "traefik.http.routers.{hostname}-external-secure.middlewares=authelia@docker" # Uncomment for authelia
-```
-```networks:
-  proxy:
-    external: true```
-        """
-        await ctx.send(config)
-        await ctx.send(config2)
-
     @commands.Cog.listener("on_message_without_command")
     async def calculate(self, message):
         """Calculate math from a given message."""
