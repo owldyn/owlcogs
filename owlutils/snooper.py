@@ -1,9 +1,11 @@
 import logging
 import time
+from types import SimpleNamespace
 from typing import Dict, Union
 
 import discord
 from redbot.core import Config, app_commands, commands
+from redbot.core.bot import Red
 
 
 class StatusSnooper(commands.Cog):
@@ -11,7 +13,7 @@ class StatusSnooper(commands.Cog):
 
     default_global_settings = {"users": {}}
 
-    def __init__(self, bot):
+    def __init__(self, bot: Red):
         self.bot = bot
         self.conf = Config.get_conf(self, identifier=4007)
         self.conf.register_global(**self.default_global_settings)
@@ -60,28 +62,17 @@ class StatusSnooper(commands.Cog):
         if not current_data.get("activity"):
             current_data["activity"] = []
 
-    @app_commands.guild_only()
-    async def last_online(
-        self, ctx: discord.Interaction, member: Union[discord.Member, discord.User]
-    ):
-        """Sends when the user was last online or offline."""
-
+    async def _get_last(self, guild, member):
         user_id = member.id
         async with self.conf.users() as users:
             info = users.get(str(user_id))
         # Need to get the user from the guild because for some reason
         # The member passed to the function shows as offline?
-        member = next((m for m in ctx.guild.members if m.id == user_id), member)
+        member = next((m for m in guild.members if m.id == user_id), member)
         currently_online = member.status == discord.Status.online
         current = -1
-        try:
-            statuses = info.get("status")
-            last = statuses[current]
-        except (AttributeError, IndexError):
-            await ctx.response.send_message(
-                "I don't have any history on that user.", ephemeral=True
-            )
-            return
+        statuses = info.get("status")
+        last = statuses[current]
 
         def while_logic(last_status):
             online_options = ["online", "idle", "dnd"]
@@ -103,6 +94,21 @@ class StatusSnooper(commands.Cog):
             except IndexError:
                 last = None
                 break
+        return currently_online, last
+
+    @app_commands.guild_only()
+    async def last_online(
+        self, ctx: discord.Interaction, member: Union[discord.Member, discord.User]
+    ):
+        """Sends when the user was last online or offline."""
+
+        try:
+            currently_online, last = await self._get_last(ctx.guild, member)
+        except (AttributeError, IndexError):
+            await ctx.response.send_message(
+                "I don't have any history on that user.", ephemeral=True
+            )
+            return
         if not last:
             await ctx.response.send_message(
                 f"That user has never been {'online' if not currently_online else 'offline'} in my history!",
@@ -116,6 +122,36 @@ class StatusSnooper(commands.Cog):
             )
             return
         await ctx.response.send_message(
-            f"{member.display_name} was last online at <t:{last.get('timestamp')}:R>.",
+            f"{member.display_name} was last online <t:{last.get('timestamp')}:R>.",
             ephemeral=True,
+        )
+
+    @commands.command("last_online")
+    @commands.is_owner()
+    async def last_online_old(self, ctx: commands.Context, user_id: str):
+        """! command for last_online for testing"""
+        try:
+            member = next((m for m in self.bot.get_all_members() if str(m.id) == user_id), None)
+            if not member:
+                await ctx.reply("That user doesn't exist.", mention_author=False)
+                return
+            currently_online, last = await self._get_last(ctx.guild, member)
+        except (AttributeError, IndexError):
+            await ctx.reply("I don't have any history on that user.", mention_author=False)
+            return
+        if not last:
+            await ctx.reply(
+                f"That user has never been {'online' if not currently_online else 'offline'} in my history!",
+                mention_author=False,
+            )
+            return
+        if member.status == discord.Status.online:
+            await ctx.reply(
+                f"{member.display_name} has been online since <t:{last.get('timestamp')}:R>.",
+                mention_author=False,
+            )
+            return
+        await ctx.reply(
+            f"{member.display_name} was last online at <t:{last.get('timestamp')}:R>.",
+            mention_author=False,
         )
