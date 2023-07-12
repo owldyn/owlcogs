@@ -26,8 +26,9 @@ class StatusSnooper(commands.Cog):
         """Save a status update"""
         async with self.conf.users() as users:
             user_id = str(after.id)
-            current_data: Dict[str, list] = users.get(user_id, {})
+            current_data: Dict[str, Union[list, dict]] = users.get(user_id, {})
             self._init_user(current_data)
+            timestamp = int(time.time())
             if before.status != after.status:
                 self.log.debug(
                     "%s changed from %s to %s!", after.name, before.status, after.status
@@ -36,9 +37,10 @@ class StatusSnooper(commands.Cog):
                     {
                         "before": before.raw_status,
                         "after": after.raw_status,
-                        "timestamp": int(time.time()),
+                        "timestamp": timestamp,
                     }
                 )
+                current_data["most_recent"][before.raw_status] = timestamp
 
             if before.activity != after.activity:
                 self.log.debug(
@@ -51,50 +53,36 @@ class StatusSnooper(commands.Cog):
                     {
                         "before": str(before.activity),
                         "after": str(after.activity),
-                        "timestamp": int(time.time()),
+                        "timestamp": timestamp,
                     }
                 )
             users[user_id] = current_data
 
     def _init_user(self, current_data):
+        if not current_data.get("most_recent"):
+            current_data["most_recent"] = {}
         if not current_data.get("status"):
             current_data["status"] = []
         if not current_data.get("activity"):
             current_data["activity"] = []
 
-    async def _get_last(self, guild, member):
-        user_id = member.id
-        async with self.conf.users() as users:
-            info = users.get(str(user_id))
-        # Need to get the user from the guild because for some reason
-        # The member passed to the function shows as offline?
-        member = next((m for m in guild.members if m.id == user_id), member)
-        currently_online = member.status == discord.Status.online
-        current = -1
-        statuses = info.get("status")
-        last = statuses[current]
-
-        def while_logic(last_status):
-            online_options = ["online", "idle", "dnd"]
-            offline_options = ["offline", "invisible"]
+    def _get_message(
+        self, recent: dict, currently_online: bool, currently_offline: bool, member: discord.Member
+    ):
+        try:
             if currently_online:
-                return (
-                    last_status.get("before") not in offline_options
-                    and last_status.get("after") not in offline_options
-                )
-            return (
-                last_status.get("before") not in online_options
-                and last_status.get("after") not in online_options
-            )
+                last = recent["offline"]
+                return f"{member.display_name} has been online since <t:{last}:R>."
+            if currently_offline:
+                last = recent["online"]
+                return f"{member.display_name} was last online <t:{last}:R>."
 
-        while while_logic(last):
-            try:
-                current -= 1
-                last = statuses[current]
-            except IndexError:
-                last = None
-                break
-        return currently_online, last
+            return (
+                f"{member.display_name} has been {member.status} since <t:{recent['online']}:R>.\n"
+                f"They have been online since <t:{recent['offline']}:R>."
+            )
+        except KeyError as k_e:
+            return f"{member.display_name} has never been {k_e.args[0]} in my history."
 
     @app_commands.guild_only()
     async def last_online(
@@ -103,26 +91,21 @@ class StatusSnooper(commands.Cog):
         """Sends when the user was last online or offline."""
 
         try:
-            currently_online, last = await self._get_last(ctx.guild, member)
-        except (AttributeError, IndexError):
+            # Have to fetch the member manually from the guild
+            # Because for some reason it passed it with it always offline on app interaction.
+            member = next((m for m in ctx.guild.members if m.id == member.id), member)
+            currently_online = member.status == discord.Status.online
+            currently_offline = member.status in [discord.Status.offline, discord.Status.invisible]
+            async with self.conf.users() as users:
+                recent = users[str(member.id)]["most_recent"]
+        except (AttributeError, IndexError, KeyError):
             await ctx.response.send_message(
                 "I don't have any history on that user.", ephemeral=True
             )
             return
-        if not last:
-            await ctx.response.send_message(
-                f"That user has never been {'online' if not currently_online else 'offline'} in my history!",
-                ephemeral=True,
-            )
-            return
-        if member.status == discord.Status.online:
-            await ctx.response.send_message(
-                f"{member.display_name} has been online since <t:{last.get('timestamp')}:R>.",
-                ephemeral=True,
-            )
-            return
+        message = self._get_message(recent, currently_online, currently_offline, member)
         await ctx.response.send_message(
-            f"{member.display_name} was last online <t:{last.get('timestamp')}:R>.",
+            message,
             ephemeral=True,
         )
 
@@ -135,23 +118,16 @@ class StatusSnooper(commands.Cog):
             if not member:
                 await ctx.reply("That user doesn't exist.", mention_author=False)
                 return
-            currently_online, last = await self._get_last(ctx.guild, member)
-        except (AttributeError, IndexError):
+            currently_online = member.status == discord.Status.online
+            currently_offline = member.status in [discord.Status.offline, discord.Status.invisible]
+            async with self.conf.users() as users:
+                recent = users[str(member.id)]["most_recent"]
+        except (AttributeError, IndexError, KeyError):
             await ctx.reply("I don't have any history on that user.", mention_author=False)
             return
-        if not last:
-            await ctx.reply(
-                f"That user has never been {'online' if not currently_online else 'offline'} in my history!",
-                mention_author=False,
-            )
-            return
-        if member.status == discord.Status.online:
-            await ctx.reply(
-                f"{member.display_name} has been online since <t:{last.get('timestamp')}:R>.",
-                mention_author=False,
-            )
-            return
+        message = self._get_message(recent, currently_online, currently_offline, member)
+
         await ctx.reply(
-            f"{member.display_name} was last online <t:{last.get('timestamp')}:R>.",
+            message,
             mention_author=False,
         )
