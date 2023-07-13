@@ -4,3 +4,5 @@ tweepy
 pixiv-api
 praw
 epicstore_api
+openai
+jsonpath_ng
