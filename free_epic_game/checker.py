@@ -1,5 +1,5 @@
 import logging
-from datetime import datetime
+from datetime import datetime, time
 
 import discord
 from discord.ext import tasks
@@ -12,7 +12,7 @@ from .dataclasses import GameInfo
 
 class EpicGamesChecker(commands.Cog):
 
-    """Small utils I'm making for myself."""
+    """Check epic games every hour and alert if there is a new game."""
 
     CHECK_MARK = "✅"
     default_global_settings = {
@@ -73,8 +73,9 @@ class EpicGamesChecker(commands.Cog):
 
     @free_epic.command()
     @commands.is_owner()
-    async def run_now(self, ctx: discord.Interaction):
-        await self.check()
+    async def run_now(self, ctx: discord.Interaction, force: str = ""):
+        force = bool(force)  # fix the type of force for the check
+        await self.check(force)
         await ctx.response.send_message("Done!", ephemeral=True)
 
     async def _handle_fails(self):
@@ -86,8 +87,9 @@ class EpicGamesChecker(commands.Cog):
                 f"Error getting epic games! Times errored: {self.epic_fail_count}"
             )
 
-    @tasks.loop(hours=1)
-    async def check(self):
+    # Want this to run 5 minutes past the hour every hour
+    @tasks.loop(time=[time(t, 5) for t in range(24)])
+    async def check(self, force: bool = False):
         """Check epic for new games."""
         self.log.debug("Checking Epic for free games!")
         try:
@@ -101,16 +103,15 @@ class EpicGamesChecker(commands.Cog):
                         history["historical"][game.game_id] = {
                             "last_seen": datetime.today().isoformat()
                         }
-                        if game.game_id in history.get("last_check", {}).get(
-                            str(channel_id), []
+                        if (
+                            game.game_id in history.get("last_check", {}).get(str(channel_id), [])
+                            and not force
                         ):
                             continue
                         # If not found, send to the channel
                         channel = self.bot.get_channel(channel_id)
                         if not channel:
-                            self.log.info(
-                                "Channel %s did not exist, removing it.", channel_id
-                            )
+                            self.log.info("Channel %s did not exist, removing it.", channel_id)
                             channels.remove(channel_id)
                         await channel.send(embed=game.embed())
                     history["last_check"][str(channel_id)] = current_ids

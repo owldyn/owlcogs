@@ -52,11 +52,21 @@ class GameInfo:
             ]
             image_url = image_urls[0] if image_urls else None
 
+            slug = game.get("productSlug")
+            if not slug:
+                parser_slug = parse("offerMappings.[*].pageType")
+                slugs = [
+                    ps.context.value.get("pageSlug")
+                    for ps in parser_slug.find(game)
+                    if ps.value == "productHome"
+                ]
+                if len(slugs) > 0:
+                    slug = slugs[0]
             info_dict = {
                 "game_id": game.get("id"),
                 "title": f"Free on Epic: {game.get('title')}",
                 "desc": game.get("description"),
-                "url": f"https://store.epicgames.com/en-US/p/{game.get('productSlug')}",
+                "url": f"https://store.epicgames.com/en-US/p/{slug}",
                 "start_date": datetime.strptime(start_dates[0], "%Y-%m-%dT%H:%M:%S")
                 if start_dates
                 else None,
