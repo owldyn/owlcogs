@@ -30,9 +30,7 @@ class RedditProcessor(AbstractProcessor):
         if settings:
             self.reddit = praw.Reddit(**settings)
         else:
-            self.reddit = praw.Reddit(
-                "Hoobot", user_agent="discord:hoobot:2.0 (by u/owldyn)"
-            )
+            self.reddit = praw.Reddit("Hoobot", user_agent="discord:hoobot:2.0 (by u/owldyn)")
         self.footer = ""
 
     class MessageBuilder(MessageBuilder):
@@ -89,11 +87,7 @@ class RedditProcessor(AbstractProcessor):
             imglink = imglink.replace("preview.redd", "i.redd")
         elif "/imgur.com" in imglink:
             imglink = imglink.replace("/imgur.com", "/i.imgur.com")
-            if (
-                ".png" not in imglink
-                and ".jpg" not in imglink
-                and ".gif" not in imglink
-            ):
+            if ".png" not in imglink and ".jpg" not in imglink and ".gif" not in imglink:
                 imglink = imglink + ".png"
 
         check_videos = ["v.redd.it", "gfycat", "streamable"]
@@ -106,19 +100,23 @@ class RedditProcessor(AbstractProcessor):
             return self._process_gallery(reddit_post, match)
         if "i.redd.it" in imglink and ".gif" in imglink:
             return self._process_igif(reddit_post, match)
-        if True in [file_type in imglink for file_type in [".png", ".jpg", ".jpeg", ".webp", ".bmp"]]:
+        if True in [
+            file_type in imglink for file_type in [".png", ".jpg", ".jpeg", ".webp", ".bmp"]
+        ]:
             return self._process_image(reddit_post, match)
         try:
             # Try to it through the article matcher
             return self._process_article(reddit_post, match)
-        except Exception: #pylint: disable=broad-except
+        except Exception:  # pylint: disable=broad-except
             pass
         # Image processing will always be a fallback. Worst case is the preview doesn't work.
         return self._process_image(reddit_post, match)
 
     def _process_article(self, reddit_post, match):
-        summarized_article = article_summary.summarize(reddit_post.url)
-        summarized_article = f"Hoobot has attempted to summarize the article:\n\n{summarized_article}"
+        summarized_article = article_summary.summarize(reddit_post.url, 3)
+        summarized_article = (
+            f"Hoobot has attempted to summarize the article:\n\n{summarized_article}"
+        )
         title = reddit_post.title
         comments = self._process_comments(match)
         if len(summarized_article) < 4096:
@@ -181,9 +179,7 @@ class RedditProcessor(AbstractProcessor):
     def _process_video(self, reddit_post, match):
         title = reddit_post.title
         comments = self._process_comments(match)
-        video = self._generic_video_dl(
-            url=self._reddit_link(reddit_post), audio=self.audio
-        )
+        video = self._generic_video_dl(url=self._reddit_link(reddit_post), audio=self.audio)
         return {
             "post": self.MessageBuilder(
                 title=title,
@@ -281,9 +277,7 @@ class RedditProcessor(AbstractProcessor):
             gallery.append(url)
         messages = []
         messages.append(
-            self.MessageBuilder(
-                spoiler=self.spoiler, title=title, url=url, footer=self.footer
-            )
+            self.MessageBuilder(spoiler=self.spoiler, title=title, url=url, footer=self.footer)
         )
         while len(gallery) > 0:
             message = ""
@@ -294,8 +288,6 @@ class RedditProcessor(AbstractProcessor):
                     message += gallery.pop(0)
                     message += "\n"
             messages.append(
-                self.MessageBuilder(
-                    spoiler=self.spoiler, content=message, footer=self.footer
-                )
+                self.MessageBuilder(spoiler=self.spoiler, content=message, footer=self.footer)
             )
         return {"post": messages, "comments": comments}
