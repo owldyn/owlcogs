@@ -32,7 +32,7 @@ class MessageBuilder(abc.ABC):
         footer=None,
         image=None,
     ) -> None:
-        self.title = title
+        self.title = title[:255]  # Cut the title off if it's too big.
         self.description = description
         self.image_url = image_url
         self.image = image
@@ -41,6 +41,8 @@ class MessageBuilder(abc.ABC):
         self.url = url
         self.content = content
         self.footer = footer
+        if len(title) > 255:
+            self.footer += r"\nTitle may be cut off."
         self._type = None
         self._send_kwargs = None
 
@@ -163,9 +165,7 @@ class AbstractProcessor(abc.ABC):
         """A list of compiled regex"""
 
     def __init__(self) -> None:
-        self.logger = logging.getLogger(
-            f"owldyn.vidlinks.processor.{self.__class__.__name__}"
-        )
+        self.logger = logging.getLogger(f"owldyn.vidlinks.processor.{self.__class__.__name__}")
         self.sydl = None
         self.shrinked_file = None
         self.ffmpeg = Ffmpeg()
@@ -212,25 +212,17 @@ class AbstractProcessor(abc.ABC):
         then uses a higher CRF until the file is below the limit"""
         if self.video_duration and float(self.video_duration) > self.MAX_LENGTH:
             # We're gonna try to shrink it even if we can't get the duration
-            raise self.VideoTooLarge(
-                "Video is too long to shrink without extreme quality loss."
-            )
+            raise self.VideoTooLarge("Video is too long to shrink without extreme quality loss.")
         if recursion_depth >= 4:
             raise self.VideoTooLarge(
                 f"Tried to shink a total of {recursion_depth} times but it was still too large!"
             )
-        self.logger.debug(
-            "file_size before %s = %s", recursion_depth, self.sydl.file_size
-        )
+        self.logger.debug("file_size before %s = %s", recursion_depth, self.sydl.file_size)
         self.ffmpeg.shrink_video(self.sydl.downloaded_file)
         if self.sydl.file_size > self.DISCORD_MAX_FILESIZE:
-            self.logger.debug(
-                "file_size after1 %s = %s", recursion_depth, self.sydl.file_size
-            )
+            self.logger.debug("file_size after1 %s = %s", recursion_depth, self.sydl.file_size)
             self.ffmpeg.lower_quality(self.sydl.downloaded_file)
-            self.logger.debug(
-                "file_size after2 %s = %s", recursion_depth, self.sydl.file_size
-            )
+            self.logger.debug("file_size after2 %s = %s", recursion_depth, self.sydl.file_size)
             if self.sydl.file_size > self.DISCORD_MAX_FILESIZE:
                 # Recurse if too big still
                 self.attempt_shrink(recursion_depth + 1)
@@ -261,9 +253,7 @@ class AbstractProcessor(abc.ABC):
         self.normalize_file()
         self.check_audio(audio)
         if self.sydl.file_size > self.DISCORD_MAX_FILESIZE:
-            self.logger.info(
-                "File is larger than discord max filesize, attempting shrinkage."
-            )
+            self.logger.info("File is larger than discord max filesize, attempting shrinkage.")
             if self.attempt_shrink() is not False:
                 self.sydl.downloaded_file.seek(0)
                 return BytesIO(self.sydl.downloaded_file.read())
