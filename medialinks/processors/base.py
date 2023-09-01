@@ -32,7 +32,7 @@ class MessageBuilder(abc.ABC):
         footer=None,
         image=None,
     ) -> None:
-        self.title = title[:255]  # Cut the title off if it's too big.
+        self.title = title[:255] if title else title # Cut the title off if it's too big.
         self.description = description
         self.image_url = image_url
         self.image = image
@@ -41,7 +41,7 @@ class MessageBuilder(abc.ABC):
         self.url = url
         self.content = content
         self.footer = footer
-        if len(title) > 255:
+        if title and len(title) > 255:
             self.footer += r"\nTitle may be cut off."
         self._type = None
         self._send_kwargs = None
