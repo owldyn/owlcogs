@@ -42,7 +42,7 @@ class MessageBuilder(abc.ABC):
         self.content = content
         self.footer = footer
         if title and len(title) > 255:
-            self.footer += r"\nTitle may be cut off."
+            self.footer += "\nTitle may be cut off."
         self._type = None
         self._send_kwargs = None
 

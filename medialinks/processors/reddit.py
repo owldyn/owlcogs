@@ -141,17 +141,20 @@ class RedditProcessor(AbstractProcessor):
 
     def _process_comments(self, match):
         if match.group(4):
-            comment_info = self.reddit.comment(match.group(4))
-            title = f"Comment by {comment_info.author.name}"
+            try:
+                comment_info = self.reddit.comment(match.group(4))
+                title = f"Comment by {comment_info.author.name}"
 
-            if (len(title + comment_info.body) < 4096) and (len(title) < 255):
+                if (len(title + comment_info.body) < 4096) and (len(title) < 255):
+                    return self.MessageBuilder(
+                        title=title, description=comment_info.body, spoiler=self.spoiler
+                    )
                 return self.MessageBuilder(
-                    title=title, description=comment_info.body, spoiler=self.spoiler
+                    title=title,
+                    description=f"Comment is too long to post in discord! [Read it here!](https://reddit.com{comment_info.permalink})",
                 )
-            return self.MessageBuilder(
-                title=title,
-                description=f"Comment is too long to post in discord! [Read it here!](https://reddit.com{comment_info.permalink})",
-            )
+            except Exception:
+                pass
         return None
 
     def _process_self(self, reddit_post, match):
