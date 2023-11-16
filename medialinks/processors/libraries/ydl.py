@@ -1,7 +1,10 @@
+import glob
+import json
 import os
 import subprocess
 import sys
 import tempfile
+from pathlib import Path
 
 
 class TemporaryYoutubeDL:
@@ -25,21 +28,34 @@ class TemporaryYoutubeDL:
             url (str): the url to download from
             ydl_opts (list, optional): Arguments to add to the yt-dlp command. Defaults to None.
         """
-        #if sys.executable:
-        #    base_command = [sys.executable, "-m", "yt-dlp"]
-        #else: # TODO figure out why this doesn't work.
-        print(sys.executable, flush=True)
         base_command = ["yt-dlp"]
 
         if ydl_opts is None:
             ydl_opts = []
         base_command.extend(ydl_opts)
-        base_command.extend([url, "-o", "-"])
-
-        download_command = subprocess.run(
-            base_command, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, check=False
+        base_command.extend(
+            [url, "-o", f"{self.downloaded_file.name}.%(ext)s", "-j", "--no-simulate"]
         )
-        self.downloaded_file.write(download_command.stdout)
+        try:
+            download_command = subprocess.run(
+                base_command, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, check=False
+            )
+
+            yt_dlp_output = json.loads(download_command.stdout)
+            # Write the file contents from the downloaded file
+            # since yt-dlp doesn't seem to allow you to strip file extensions.
+            with open(
+                Path(f'{self.downloaded_file.name}.{yt_dlp_output.get("ext")}'), "rb"
+            ) as i_file:
+                self.downloaded_file.seek(0)
+                self.downloaded_file.write(i_file.read())
+
+        finally:
+            # Delete any files that shouldn't exist anymore.
+            mid_files = glob.glob(f"{self.downloaded_file.name}.*")
+            for file in mid_files:
+                if (file_path := Path(file)).exists():
+                    os.remove(file_path)
 
     @property
     def file_size(self):
