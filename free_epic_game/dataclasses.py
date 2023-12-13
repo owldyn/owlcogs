@@ -21,7 +21,12 @@ class GameInfo:
     @classmethod
     def make_from_response(cls, response) -> List["GameInfo"]:
         """Builds a list of this class from the Epic free games response"""
-        games = response.get("data", {}).get("Catalog").get("searchStore", {}).get("elements", [])
+        games = (
+            response.get("data", {})
+            .get("Catalog")
+            .get("searchStore", {})
+            .get("elements", [])
+        )
         infos = []
         for game in games:
             parser_now = parse(
@@ -30,11 +35,7 @@ class GameInfo:
             # Maybe do future stuff at some point?
             # parser_future = parse("promotions.upcomingPromotionalOffers.[*].promotionalOffers.[*].discountSetting.discountPercentage")
 
-            if (
-                not parser_now
-                or 0 not in [g.value for g in parser_now.find(game)]
-                or game.get("isCodeRedemptionOnly")
-            ):
+            if not parser_now or 0 not in [g.value for g in parser_now.find(game)]:
                 continue
 
             start_dates = [
