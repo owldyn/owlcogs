@@ -40,7 +40,7 @@ class Simc(commands.Cog):
         name="simc",
         description="Run your character through simc.",
         guild_only=True,
-        guild_ids=[89533605344215040],
+        guild_ids=[89533605344215040, 83431109957783552],
     )
 
     @simc_command.command(name="load_settings")  # type: ignore
