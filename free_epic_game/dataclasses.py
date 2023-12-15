@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from datetime import datetime
-from typing import List
+from typing import List, Union
 
 from discord import Embed
 from jsonpath_ng import parse
@@ -14,14 +14,19 @@ class GameInfo:
     title: str
     desc: str
     url: str
-    start_date: datetime
-    end_date: datetime
+    start_date: Union[datetime, None]
+    end_date: Union[datetime, None]
     thumbnail_url: str
 
     @classmethod
     def make_from_response(cls, response) -> List["GameInfo"]:
         """Builds a list of this class from the Epic free games response"""
-        games = response.get("data", {}).get("Catalog").get("searchStore", {}).get("elements", [])
+        games = (
+            response.get("data", {})
+            .get("Catalog")
+            .get("searchStore", {})
+            .get("elements", [])
+        )
         infos = []
         for game in games:
             parser_now = parse(
@@ -30,19 +35,18 @@ class GameInfo:
             # Maybe do future stuff at some point?
             # parser_future = parse("promotions.upcomingPromotionalOffers.[*].promotionalOffers.[*].discountSetting.discountPercentage")
 
-            if (
-                not parser_now
-                or 0 not in [g.value for g in parser_now.find(game)]
-                or game.get("isCodeRedemptionOnly")
-            ):
+            if not parser_now or 0 not in [g.value for g in parser_now.find(game)]:
                 continue
 
             start_dates = [
                 g.context.context.value.get("startDate").split(".")[0]
                 for g in parser_now.find(game)
+                if g.context.context.value.get("startDate")
             ]
             end_dates = [
-                g.context.context.value.get("endDate").split(".")[0] for g in parser_now.find(game)
+                g.context.context.value.get("endDate").split(".")[0]
+                for g in parser_now.find(game)
+                if g.context.context.value.get("endDate")
             ]
 
             image_urls = [
@@ -84,7 +88,14 @@ class GameInfo:
         """Return an embed"""
         embed = Embed(title=self.title, description=self.desc, url=self.url)
         embed.set_image(url=self.thumbnail_url)
-        embed.set_footer(
-            text=f"Started on {self.start_date.strftime(r'%Y-%m-%d')}\nEnds on {self.end_date.strftime(r'%Y-%m-%d')}"
-        )
+        if self.end_date:
+            end_footer = f"Ends on {self.end_date.strftime(r'%Y-%m-%d')}"
+        else:
+            end_footer = "No end time given."
+
+        if self.start_date:
+            start_footer = f"Started on {self.start_date.strftime(r'%Y-%m-%d')}"
+        else:
+            start_footer = "No Start Time given."
+        embed.set_footer(text=f"{start_footer}\n{end_footer}")
         return embed
