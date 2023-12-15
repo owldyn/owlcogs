@@ -30,6 +30,7 @@ class KubernetesWrapper:
             name=f"simc-{name}",
             image="simulationcraftorg/simc:latest",
             volume_mounts=[vol_mount],
+            image_pull_policy="Always",
             **args_dict,
         )
         template = client.V1PodTemplateSpec(
