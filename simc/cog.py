@@ -186,8 +186,20 @@ class Simc(commands.Cog):
         await self.k8s.watch(job)
 
         path = f"{name}/{file_name}"
-        if not Path(folder, file_name).exists():
+        html_file = Path(folder, file_name)
+        if not html_file.exists():
             await ctx.followup.send(f"There was an error saving your file. Try again.")
             return False
-        await ctx.followup.send(f"[Done! Click here for your results.]({url}{path})")
+        pawn_string = None
+        if weights:
+            with open(html_file) as file:
+                for line in file:
+                    if "( Pawn" in line:
+                        pawn_string = line
+        await ctx.followup.send(
+            f"[Done! Click here for your results.]({url}{path})"
+            + f"\nYour pawn string is `{pawn_string}`"
+            if pawn_string
+            else ""
+        )
         return True
