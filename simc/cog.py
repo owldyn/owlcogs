@@ -7,10 +7,11 @@ import os
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from time import time
-from typing import Optional
+from typing import Optional, cast
 
 import discord
 from discord.ext import tasks
+from kubernetes.client import V1Job
 from redbot.core import Config, app_commands, commands
 
 from .kub_setup import KubernetesWrapper
@@ -179,7 +180,7 @@ class Simc(commands.Cog):
             args.append(simc_file)
 
         # Run the job
-        job = self.k8s.create_job_object(full_name, args)
+        job: V1Job = cast(V1Job, self.k8s.create_job_object(full_name, args))
 
         # Give output
         await ctx.response.send_message("Started. This may take a few minutes.")
