@@ -1,8 +1,8 @@
 import json
+import logging
 import subprocess
 import tempfile
 from enum import Enum
-import logging
 
 logger = logging.getLogger("owldyn.vidlinks.library.ffmpeg")
 
@@ -156,21 +156,21 @@ class Ffmpeg:
             "24",
             "-vf",
             "scale=ceil(iw/4)*2:ceil(ih/4)*2",
-            "-b:a",
-            "128k",
+            "-c:a",
+            "copy",
         ]
 
         self.run_ffmpeg_command_on_file(self.Commands.FFMPEG, args, file)
 
     def lower_quality(self, file: tempfile.NamedTemporaryFile):
         """Lowers the quality of the video by using crf 28."""
-        args = ["-i", file.name, "-preset", "veryfast", "-crf", "28", "-b:a", "128k"]
+        args = ["-i", file.name, "-preset", "veryfast", "-crf", "28", "-c:a", "copy"]
 
         self.run_ffmpeg_command_on_file(self.Commands.FFMPEG, args, file)
 
     def convert_to_mp4(self, file: tempfile.NamedTemporaryFile):
         """Converts file to mp4"""
-        args = ["-i", file.name, "-c:v", "libx264", "-c:a", "copy"]
+        args = ["-i", file.name, "-c:v", "libx264", "-c:a", "aac", "-b:a", "128k"]
         self.run_ffmpeg_command_on_file(self.Commands.FFMPEG, args, file)
 
     def normalize_file(self, file: tempfile.NamedTemporaryFile):
