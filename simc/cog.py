@@ -208,7 +208,7 @@ class Simc(commands.Cog):
         path = f"{name}/{file_name}"
         html_file = Path(folder, file_name)
         if not html_file.exists():
-            await ctx.followup.send(f"There was an error saving your file. Try again.")
+            await ctx.followup.send("There was an error saving your file. Try again.")
             return False
         pawn_string = None
         if weights:
@@ -218,8 +218,6 @@ class Simc(commands.Cog):
                         pawn_string = line
         await ctx.followup.send(
             f"[Done! Click here for your results.]({url}{path})"
-            + f"\nYour pawn string is `{pawn_string}`"
-            if pawn_string
-            else ""
+            + (f"\nYour pawn string is `{pawn_string}`" if pawn_string else "")
         )
         return True
