@@ -120,8 +120,8 @@ class Simc(commands.Cog):
             weights = discord.ui.Select(
                 placeholder="Generate weights?",
                 options=[
-                    discord.components.SelectOption(label="True", value=True),
-                    discord.components.SelectOption(label="False", value=False),
+                    discord.components.SelectOption(label="True", value="true"),
+                    discord.components.SelectOption(label="False", value="false"),
                 ],
             )
 
@@ -143,12 +143,15 @@ class Simc(commands.Cog):
                 self.log.debug(simc_file)
                 with open(simc_file, "w", encoding="ascii") as file:
                     file.write(_self.character.value)
+                weights = {"true": True, "false": False}.get(
+                    _self.style.values[0], True
+                )
                 await self._run(
                     interaction,
                     str(interaction.user.id),
                     [],
-                    _self.weights.values[0],
-                    _self.style.vaules[0],
+                    weights,
+                    _self.style.values[0],
                     now,
                     str(simc_file),
                 )
