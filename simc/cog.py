@@ -90,39 +90,21 @@ class Simc(commands.Cog):
         return [s for s in selections if current in s.name]
 
     @simc_command.command(name="run_character")
-    async def run_character(self, ctx: discord.Interaction):
+    @app_commands.autocomplete(sim_type=get_type)
+    async def run_character(
+        self,
+        ctx: discord.Interaction,
+        weights: bool = True,
+        sim_type: str = "Patchwerk",
+    ):
         """Run a character via the simc addon output."""
 
         class CharacterModal(Modal, title="Character Information"):
-            # This is a longer, paragraph style input, where user can submit feedback
-            # Unlike the name, it is not required. If filled out, however, it will
-            # only accept a maximum of 300 characters, as denoted by the
-            # `max_length=300` kwarg.
             character = discord.ui.TextInput(
                 label="Simc output",
                 style=discord.TextStyle.long,
                 placeholder="Paste your simc output here",
                 required=True,
-            )
-
-            style = discord.ui.Select(
-                placeholder="Simulation Style",
-                max_values=1,
-                options=[
-                    discord.components.SelectOption(
-                        label="Patchwerk", value="Patchwerk"
-                    ),
-                    discord.components.SelectOption(
-                        label="Dungeon Slice", value="DungeonSlice"
-                    ),
-                ],
-            )
-            weights = discord.ui.Select(
-                placeholder="Generate weights?",
-                options=[
-                    discord.components.SelectOption(label="True", value="true"),
-                    discord.components.SelectOption(label="False", value="false"),
-                ],
             )
 
             async def on_submit(_self, interaction: discord.Interaction):
@@ -143,15 +125,13 @@ class Simc(commands.Cog):
                 self.log.debug(simc_file)
                 with open(simc_file, "w", encoding="ascii") as file:
                     file.write(_self.character.value)
-                weights = {"true": True, "false": False}.get(
-                    _self.style.values[0], True
-                )
+
                 await self._run(
                     interaction,
                     str(interaction.user.id),
                     [],
                     weights,
-                    _self.style.values[0],
+                    sim_type,
                     now,
                     str(simc_file),
                 )
