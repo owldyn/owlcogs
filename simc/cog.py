@@ -93,7 +93,7 @@ class Simc(commands.Cog):
     async def run_character(
         self,
         ctx: discord.Interaction,
-        file: discord.Attachment,
+        simc_output: str,
         weights: bool = True,
         sim_type: str = "Patchwerk",
     ):
@@ -114,7 +114,8 @@ class Simc(commands.Cog):
             os.mkdir(path)
         simc_file = Path(path, f"{now}.simc")
         self.log.debug(simc_file)
-        await file.save(simc_file)
+        with open(sim_type, "w", encoding="ascii") as file:
+            file.write(simc_output)
         await self._run(
             ctx, str(ctx.user.id), [], weights, sim_type, now, str(simc_file)
         )
