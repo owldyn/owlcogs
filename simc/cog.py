@@ -90,7 +90,6 @@ class Simc(commands.Cog):
         return [s for s in selections if current in s.name]
 
     @simc_command.command(name="run_character")
-    @app_commands.autocomplete(sim_type=get_type)
     async def run_character(self, ctx: discord.Interaction):
         """Run a character via the simc addon output."""
 
