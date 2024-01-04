@@ -114,7 +114,7 @@ class Simc(commands.Cog):
             os.mkdir(path)
         simc_file = Path(path, f"{now}.simc")
         self.log.debug(simc_file)
-        with open(sim_type, "w", encoding="ascii") as file:
+        with open(simc_file, "w", encoding="ascii") as file:
             file.write(simc_output)
         await self._run(
             ctx, str(ctx.user.id), [], weights, sim_type, now, str(simc_file)
