@@ -11,6 +11,7 @@ from typing import Optional, cast
 
 import discord
 from discord.ext import tasks
+from discord.ui import Modal
 from kubernetes.client import V1Job
 from redbot.core import Config, app_commands, commands
 
@@ -90,35 +91,70 @@ class Simc(commands.Cog):
 
     @simc_command.command(name="run_character")
     @app_commands.autocomplete(sim_type=get_type)
-    async def run_character(
-        self,
-        ctx: discord.Interaction,
-        simc_output: str,
-        weights: bool = True,
-        sim_type: str = "Patchwerk",
-    ):
-        """Run a character via the simc addon output.
-        Output must be attached as a text file."""
-        now = int(time())
-        async with self.config.k8s_settings() as settings:
-            location = settings.get("file_location")
+    async def run_character(self, ctx: discord.Interaction):
+        """Run a character via the simc addon output."""
 
-        # Make input path if not exists
-        path = Path(location, "input")
-        if not path.exists():
-            os.mkdir(path)
+        class CharacterModal(Modal, title="Character Information"):
+            # This is a longer, paragraph style input, where user can submit feedback
+            # Unlike the name, it is not required. If filled out, however, it will
+            # only accept a maximum of 300 characters, as denoted by the
+            # `max_length=300` kwarg.
+            character = discord.ui.TextInput(
+                label="Simc output",
+                style=discord.TextStyle.long,
+                placeholder="Paste your simc output here",
+                required=True,
+            )
 
-        # Make user path if not exists
-        path = Path(path, str(ctx.user.id))
-        if not path.exists():
-            os.mkdir(path)
-        simc_file = Path(path, f"{now}.simc")
-        self.log.debug(simc_file)
-        with open(simc_file, "w", encoding="ascii") as file:
-            file.write(simc_output)
-        await self._run(
-            ctx, str(ctx.user.id), [], weights, sim_type, now, str(simc_file)
-        )
+            style = discord.ui.Select(
+                placeholder="Simulation Style",
+                max_values=1,
+                options=[
+                    discord.components.SelectOption(
+                        label="Patchwerk", value="Patchwerk"
+                    ),
+                    discord.components.SelectOption(
+                        label="Dungeon Slice", value="DungeonSlice"
+                    ),
+                ],
+            )
+            weights = discord.ui.Select(
+                placeholder="Generate weights?",
+                options=[
+                    discord.components.SelectOption(label="True", value=True),
+                    discord.components.SelectOption(label="False", value=False),
+                ],
+            )
+
+            async def on_submit(_self, interaction: discord.Interaction):
+                now = int(time())
+                async with self.config.k8s_settings() as settings:
+                    location = settings.get("file_location")
+
+                # Make input path if not exists
+                path = Path(location, "input")
+                if not path.exists():
+                    os.mkdir(path)
+
+                # Make user path if not exists
+                path = Path(path, str(interaction.user.id))
+                if not path.exists():
+                    os.mkdir(path)
+                simc_file = Path(path, f"{now}.simc")
+                self.log.debug(simc_file)
+                with open(simc_file, "w", encoding="ascii") as file:
+                    file.write(_self.character.value)
+                await self._run(
+                    interaction,
+                    str(interaction.user.id),
+                    [],
+                    _self.weights.values[0],
+                    _self.style.vaules[0],
+                    now,
+                    str(simc_file),
+                )
+
+        await ctx.response.send_modal(CharacterModal())
 
     @simc_command.command(name="run_armoury")
     @app_commands.autocomplete(character=get_characters, sim_type=get_type)
