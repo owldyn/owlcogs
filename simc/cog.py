@@ -11,6 +11,7 @@ from typing import Optional, cast
 
 import discord
 from discord.ext import tasks
+from discord.ui import Modal
 from kubernetes.client import V1Job
 from redbot.core import Config, app_commands, commands
 
@@ -93,31 +94,49 @@ class Simc(commands.Cog):
     async def run_character(
         self,
         ctx: discord.Interaction,
-        file: discord.Attachment,
         weights: bool = True,
         sim_type: str = "Patchwerk",
     ):
-        """Run a character via the simc addon output.
-        Output must be attached as a text file."""
-        now = int(time())
-        async with self.config.k8s_settings() as settings:
-            location = settings.get("file_location")
+        """Run a character via the simc addon output."""
 
-        # Make input path if not exists
-        path = Path(location, "input")
-        if not path.exists():
-            os.mkdir(path)
+        class CharacterModal(Modal, title="Character Information"):
+            character = discord.ui.TextInput(
+                label="Simc output",
+                style=discord.TextStyle.long,
+                placeholder="Paste your simc output here",
+                required=True,
+            )
 
-        # Make user path if not exists
-        path = Path(path, str(ctx.user.id))
-        if not path.exists():
-            os.mkdir(path)
-        simc_file = Path(path, f"{now}.simc")
-        self.log.debug(simc_file)
-        await file.save(simc_file)
-        await self._run(
-            ctx, str(ctx.user.id), [], weights, sim_type, now, str(simc_file)
-        )
+            async def on_submit(_self, interaction: discord.Interaction):
+                now = int(time())
+                async with self.config.k8s_settings() as settings:
+                    location = settings.get("file_location")
+
+                # Make input path if not exists
+                path = Path(location, "input")
+                if not path.exists():
+                    os.mkdir(path)
+
+                # Make user path if not exists
+                path = Path(path, str(interaction.user.id))
+                if not path.exists():
+                    os.mkdir(path)
+                simc_file = Path(path, f"{now}.simc")
+                self.log.debug(simc_file)
+                with open(simc_file, "w", encoding="ascii") as file:
+                    file.write(_self.character.value)
+
+                await self._run(
+                    interaction,
+                    str(interaction.user.id),
+                    [],
+                    weights,
+                    sim_type,
+                    now,
+                    str(simc_file),
+                )
+
+        await ctx.response.send_modal(CharacterModal())
 
     @simc_command.command(name="run_armoury")
     @app_commands.autocomplete(character=get_characters, sim_type=get_type)
@@ -190,7 +209,7 @@ class Simc(commands.Cog):
         path = f"{name}/{file_name}"
         html_file = Path(folder, file_name)
         if not html_file.exists():
-            await ctx.followup.send(f"There was an error saving your file. Try again.")
+            await ctx.followup.send("There was an error saving your file. Try again.")
             return False
         pawn_string = None
         if weights:
@@ -200,8 +219,6 @@ class Simc(commands.Cog):
                         pawn_string = line
         await ctx.followup.send(
             f"[Done! Click here for your results.]({url}{path})"
-            + f"\nYour pawn string is `{pawn_string}`"
-            if pawn_string
-            else ""
+            + (f"\nYour pawn string is `{pawn_string}`" if pawn_string else "")
         )
         return True
