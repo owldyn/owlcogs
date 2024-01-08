@@ -62,6 +62,11 @@ class KubernetesWrapper:
                 if jorb.metadata.name == job.metadata.name:
                     if not jorb.status.active:
                         return True
+                else:
+                    continue
+                # If it doesn't return or continue, the job doesn't exist anymore.
+                # So we exit.
+                times = 1200
             await asyncio.sleep(5)
             times += 5
         return False
