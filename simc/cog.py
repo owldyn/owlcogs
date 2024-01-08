@@ -166,6 +166,7 @@ class Simc(commands.Cog):
         if weights:
             args.append("calculate_scale_factors=1")
         args.append(f"fight_style={sim_type}")
+        args.append(f"iterations=50000")
 
         # Make sure the path exists to save to.
         folder = Path(f"{location}{name}")
