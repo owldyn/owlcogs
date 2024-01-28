@@ -136,7 +136,7 @@ class MediaLinks(commands.Cog):
                     matches = check.findall(msg_content)
                     if matches:
                         # if -m is in the message,
-                        audio = not bool(re.match(r" -m(?=\s|$)", msg_content))
+                        audio = bool(re.match(r" -m(?=\s|$)", msg_content))
                         spoiler = False
                         if "as spoiler" in msg_content:
                             spoiler = True
@@ -169,7 +169,7 @@ class MediaLinks(commands.Cog):
         ctx,
         processor_name: str,
         spoiler: bool = False,
-        audio: bool = True,
+        audio: bool = False,
     ):
         async with ctx.typing():
             try:
