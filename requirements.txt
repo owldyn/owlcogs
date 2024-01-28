@@ -6,3 +6,9 @@ praw
 epicstore_api
 openai
 jsonpath_ng
+requests
+youtube-dl
+asyncpraw
+praw
+tweepy
+pixiv-api
