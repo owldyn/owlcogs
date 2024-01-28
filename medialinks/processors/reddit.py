@@ -30,7 +30,9 @@ class RedditProcessor(AbstractProcessor):
         if settings:
             self.reddit = praw.Reddit(**settings)
         else:
-            self.reddit = praw.Reddit("Hoobot", user_agent="discord:hoobot:2.0 (by u/owldyn)")
+            self.reddit = praw.Reddit(
+                "Hoobot", user_agent="discord:hoobot:2.0 (by u/owldyn)"
+            )
         self.footer = ""
 
     class MessageBuilder(MessageBuilder):
@@ -87,7 +89,11 @@ class RedditProcessor(AbstractProcessor):
             imglink = imglink.replace("preview.redd", "i.redd")
         elif "/imgur.com" in imglink:
             imglink = imglink.replace("/imgur.com", "/i.imgur.com")
-            if ".png" not in imglink and ".jpg" not in imglink and ".gif" not in imglink:
+            if (
+                ".png" not in imglink
+                and ".jpg" not in imglink
+                and ".gif" not in imglink
+            ):
                 imglink = imglink + ".png"
 
         check_videos = ["v.redd.it", "gfycat", "streamable"]
@@ -101,7 +107,8 @@ class RedditProcessor(AbstractProcessor):
         if "i.redd.it" in imglink and ".gif" in imglink:
             return self._process_igif(reddit_post, match)
         if True in [
-            file_type in imglink for file_type in [".png", ".jpg", ".jpeg", ".webp", ".bmp"]
+            file_type in imglink
+            for file_type in [".png", ".jpg", ".jpeg", ".webp", ".bmp"]
         ]:
             return self._process_image(reddit_post, match)
         try:
@@ -182,7 +189,9 @@ class RedditProcessor(AbstractProcessor):
     def _process_video(self, reddit_post, match):
         title = reddit_post.title
         comments = self._process_comments(match)
-        video = self._generic_video_dl(url=self._reddit_link(reddit_post), audio=self.audio)
+        video = self._generic_video_dl(
+            url=self._reddit_link(reddit_post), audio=self.audio
+        )
         return {
             "post": self.MessageBuilder(
                 title=title,
@@ -280,7 +289,9 @@ class RedditProcessor(AbstractProcessor):
             gallery.append(url)
         messages = []
         messages.append(
-            self.MessageBuilder(spoiler=self.spoiler, title=title, url=url, footer=self.footer)
+            self.MessageBuilder(
+                spoiler=self.spoiler, title=title, url=url, footer=self.footer
+            )
         )
         while len(gallery) > 0:
             message = ""
@@ -291,6 +302,8 @@ class RedditProcessor(AbstractProcessor):
                     message += gallery.pop(0)
                     message += "\n"
             messages.append(
-                self.MessageBuilder(spoiler=self.spoiler, content=message, footer=self.footer)
+                self.MessageBuilder(
+                    spoiler=self.spoiler, content=message, footer=self.footer
+                )
             )
         return {"post": messages, "comments": comments}

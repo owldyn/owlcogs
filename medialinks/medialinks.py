@@ -1,8 +1,11 @@
-import discord
+import re
 
+import discord
 from redbot.core import Config, checks, commands
-from .processors.libraries import article_summary
+
 from . import processors
+from .processors.libraries import article_summary
+
 
 class MediaLinks(commands.Cog):
     """Downloader for media from multiple websites"""
@@ -132,17 +135,21 @@ class MediaLinks(commands.Cog):
                 for check in processor.regex_checks:
                     matches = check.findall(msg_content)
                     if matches:
+                        # if -m is in the message,
+                        audio = not bool(re.match(r" -m(?=\s|$)", msg_content))
                         spoiler = False
                         if "as spoiler" in msg_content:
                             spoiler = True
                         matches = [
                             "".join(list(match)) for match in matches
                         ]  # findall returns the groups separated.
-                        await self.process_link(processor, matches, ctx, name, spoiler)
+                        await self.process_link(
+                            processor, matches, ctx, name, spoiler, audio
+                        )
                         break
 
     @commands.command()
-    async def medialink(self, ctx, url, spoiler=False):
+    async def medialink(self, ctx, url, spoiler=False, audio=True):
         for name, processor in self.supported_processors:
             for check in processor.regex_checks:
                 matches = check.findall(url)
@@ -150,16 +157,19 @@ class MediaLinks(commands.Cog):
                     matches = [
                         "".join(list(match)) for match in matches
                     ]  # findall returns the groups separated.
-                    return await self.process_link(processor, [url], ctx, name, spoiler)
+                    return await self.process_link(
+                        processor, [url], ctx, name, spoiler, audio
+                    )
         await ctx.send("Url did not match any recognized urls!")
 
     async def process_link(
         self,
-        processor: processors.base.AbstractProcessor,
+        processor: type[processors.base.AbstractProcessor],
         matches: list,
         ctx,
         processor_name: str,
         spoiler: bool = False,
+        audio: bool = True,
     ):
         async with ctx.typing():
             try:
@@ -170,11 +180,15 @@ class MediaLinks(commands.Cog):
             for match in matches:
                 with processor(config) as proc:
                     try:
-                        message_dict = await proc.process_url(match, spoiler=spoiler)
+                        message_dict = await proc.process_url(
+                            match, spoiler=spoiler, audio=audio
+                        )
                     except processor.VideoTooLarge:
                         await ctx.send("Video was too long to shrink.")
                         return
-                    except processor.InvalidURL as exc:  # this shouldn't ever happen? but jic
+                    except (
+                        processor.InvalidURL
+                    ) as exc:  # this shouldn't ever happen? but jic
                         await ctx.send(exc)
                         return
                     messages = message_dict.get("post")
@@ -220,6 +234,10 @@ class MediaLinks(commands.Cog):
         """Attempt to summarize a given article"""
         try:
             summary = article_summary.summarize(url, num_sentences)
-            await ctx.reply(embed=discord.Embed(description=summary), mention_author=False)
+            await ctx.reply(
+                embed=discord.Embed(description=summary), mention_author=False
+            )
         except Exception:
-            await ctx.reply("There was an error processing the url!", mention_author=False)
+            await ctx.reply(
+                "There was an error processing the url!", mention_author=False
+            )
