@@ -12,3 +12,5 @@ asyncpraw
 praw
 tweepy
 pixiv-api
+py-dactyl
+kubernetes
