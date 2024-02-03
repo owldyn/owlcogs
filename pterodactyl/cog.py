@@ -17,13 +17,14 @@ RED_X_MARK = "❌"
 
 
 class Pterodactyl(commands.Cog):
-    def __init__(self, bot):
+    def __init__(self, bot: discord.Client):
         self.bot = bot
         self.conf = Config.get_conf(self, identifier=26400736017)
         self.conf.register_global(
             pterodactyl_api_key=None,
             url=None,
             nodes={},
+            allow_restart=[],
         )
         self.log = logging.getLogger("owlcogs.Pterodactyl")
 
@@ -45,7 +46,7 @@ class Pterodactyl(commands.Cog):
             await self.conf.url(), await self.conf.pterodactyl_api_key()
         )
 
-    async def server_autocomplete(self, ctx: commands.Context, current: str):
+    async def server_autocomplete(self, ctx: discord.Interaction, current: str):
         if not self._check_api_key():
             return []
         _, pterodactyl = await self._get_pterodactyl()
@@ -57,12 +58,14 @@ class Pterodactyl(commands.Cog):
             if current in server.name
         ]
 
-    async def online_server_autocomplete(self, ctx: commands.Context, current: str):
+    async def online_server_autocomplete(self, ctx: discord.Interaction, current: str):
         if not self._check_api_key():
             return []
         _, pterodactyl = await self._get_pterodactyl()
+        allowed = await self.conf.allow_restart()
         servers = pterodactyl.get_servers()
         servers = await self.server_autocomplete(ctx, current)
+        servers = [server for server in servers if server.value in allowed]
         with ThreadPoolExecutor() as pool:
             server_statuses = pool.map(
                 pterodactyl.get_server_status, [server.value for server in servers]
@@ -70,7 +73,7 @@ class Pterodactyl(commands.Cog):
         response = [
             server
             for server, status in zip(servers, server_statuses)
-            if status.current_state == "running"
+            if status.current_state == "running" and server.value in allowed
         ]
         self.log.debug(response)
         return response
@@ -199,3 +202,24 @@ class Pterodactyl(commands.Cog):
                 responses.append(handler.zfs_snapshot())
 
         await ctx.response.send_message(str(responses), ephemeral=True)
+
+    @pterodactyl.command(name="allow_restart")  # type: ignore
+    @commands.is_owner()
+    @app_commands.autocomplete(server_name=server_autocomplete)
+    async def allow_restart(self, ctx: discord.Interaction, server_name: str):
+        """Allow restarts of servers."""
+        async with self.conf.allow_restart() as allowed:
+            allowed.append(server_name)
+        await ctx.response.send_message("Done.", ephemeral=True)
+
+    @pterodactyl.command(name="remove_restart")  # type: ignore
+    @commands.is_owner()
+    @app_commands.autocomplete(server_name=server_autocomplete)
+    async def remove_restart(self, ctx: discord.Interaction, server_name: str):
+        """Allow restarts of servers."""
+        async with self.conf.allow_restart() as allowed:
+            try:
+                allowed.remove(server_name)
+            except ValueError:
+                pass
+        await ctx.response.send_message("Done.", ephemeral=True)
