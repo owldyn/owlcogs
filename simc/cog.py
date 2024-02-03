@@ -4,13 +4,11 @@ simc runner
 import asyncio
 import logging
 import os
-from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from time import time
 from typing import Optional, cast
 
 import discord
-from discord.ext import tasks
 from discord.ui import Modal
 from kubernetes.client import V1Job
 from redbot.core import Config, app_commands, commands

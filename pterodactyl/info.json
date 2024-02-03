@@ -1,5 +1,6 @@
 {
     "requirements": [
-      "py-dactyl"
+      "py-dactyl",
+      "paramiko"
     ]
 }
