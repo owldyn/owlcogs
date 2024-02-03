@@ -112,7 +112,7 @@ class Pterodactyl(commands.Cog):
             return
         url, pterodactyl = await self._get_pterodactyl()
 
-        if not (server := pterodactyl.get_servers_dict("name").get(server_name)):
+        if not (server := pterodactyl.get_servers_dict("uuid").get(server_name)):
             await ctx.response.send_message(
                 f"Server {server_name} not found.", ephemeral=True
             )
