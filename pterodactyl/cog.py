@@ -1,13 +1,13 @@
 import logging
-import re
 from concurrent.futures import ThreadPoolExecutor
-from tempfile import NamedTemporaryFile
-from typing import Any, Coroutine
 
 import discord
 from discord.interactions import Interaction
-from redbot.core import Config, app_commands, commands
+from redbot.core import Config, app_commands
+from redbot.core import bot as red_bot
+from redbot.core import commands
 
+from . import permissions
 from .api_wrapper import PterodactylAPI
 from .modals import NodeModal
 from .ssh_handler import ZFSSSHHandler
@@ -17,7 +17,7 @@ RED_X_MARK = "❌"
 
 
 class Pterodactyl(commands.Cog):
-    def __init__(self, bot: discord.Client):
+    def __init__(self, bot: red_bot.Red):
         self.bot = bot
         self.conf = Config.get_conf(self, identifier=26400736017)
         self.conf.register_global(
@@ -80,7 +80,7 @@ class Pterodactyl(commands.Cog):
         return response
 
     @pterodactyl.command(name="set_api")  # type: ignore
-    @commands.is_owner()
+    @permissions.is_owner()
     async def set_api(self, ctx: discord.Interaction, api_key: str, url: str):
         """Set the api key for the pterodactyl instance."""
         await self.conf.pterodactyl_api_key.set(api_key)
@@ -139,8 +139,7 @@ class Pterodactyl(commands.Cog):
         await ctx.response.send_message(embed=embed)
 
     @pterodactyl.command(name="restart_server")
-    @commands.cooldown(1, 600)
-    @app_commands.autocomplete(server_name=online_server_autocomplete)  # type: ignore
+    @app_commands.autocomplete(server_name=online_server_autocomplete)
     async def restart_server(self, ctx: discord.Interaction, server_name: str):
         """Restart a server."""
         if not await self._check_api_key():
@@ -161,8 +160,8 @@ class Pterodactyl(commands.Cog):
                 "Server returned unknown value.", ephemeral=True
             )
 
-    @pterodactyl.command(name="set_node")  # type: ignore
-    @commands.is_owner()
+    @pterodactyl.command(name="set_node")
+    @permissions.is_owner()
     async def set_node(self, ctx: discord.Interaction):
         """Set a node for zfs snapshots."""
 
@@ -182,8 +181,8 @@ class Pterodactyl(commands.Cog):
 
         await ctx.response.send_modal(_NodeModal())
 
-    @pterodactyl.command(name="delete_node")  # type: ignore
-    @commands.is_owner()
+    @pterodactyl.command(name="delete_node")
+    @permissions.is_owner()
     async def delete_node(self, ctx: discord.Interaction, node: str):
         """Delete a node for zfs snapshots."""
         async with self.conf.nodes() as nodes:
@@ -191,8 +190,8 @@ class Pterodactyl(commands.Cog):
                 del nodes[node]
         await ctx.response.send_message("Done.", ephemeral=True)
 
-    @pterodactyl.command(name="zfs_snapshot")  # type: ignore
-    @commands.is_owner()
+    @pterodactyl.command(name="zfs_snapshot")
+    @permissions.is_owner()
     async def zfs_snapshot(self, ctx: discord.Interaction):
         """Create a zfs snapshot of a server."""
         responses = []
@@ -204,8 +203,8 @@ class Pterodactyl(commands.Cog):
 
         await ctx.response.send_message(str(responses), ephemeral=True)
 
-    @pterodactyl.command(name="allow_restart")  # type: ignore
-    @commands.is_owner()
+    @pterodactyl.command(name="allow_restart")
+    @permissions.is_owner()
     @app_commands.autocomplete(server_name=server_autocomplete)
     async def allow_restart(self, ctx: discord.Interaction, server_name: str):
         """Allow restarts of servers."""
@@ -213,8 +212,8 @@ class Pterodactyl(commands.Cog):
             allowed.append(server_name)
         await ctx.response.send_message("Done.", ephemeral=True)
 
-    @pterodactyl.command(name="remove_restart")  # type: ignore
-    @commands.is_owner()
+    @pterodactyl.command(name="remove_restart")
+    @permissions.is_owner()
     @app_commands.autocomplete(server_name=server_autocomplete)
     async def remove_restart(self, ctx: discord.Interaction, server_name: str):
         """Allow restarts of servers."""
