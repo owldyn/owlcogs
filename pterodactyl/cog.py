@@ -47,7 +47,7 @@ class Pterodactyl(commands.Cog):
         )
 
     async def server_autocomplete(self, ctx: discord.Interaction, current: str):
-        if not self._check_api_key():
+        if not await self._check_api_key():
             return []
         _, pterodactyl = await self._get_pterodactyl()
         servers = pterodactyl.get_servers()
@@ -59,7 +59,7 @@ class Pterodactyl(commands.Cog):
         ]
 
     async def online_server_autocomplete(self, ctx: discord.Interaction, current: str):
-        if not self._check_api_key():
+        if not await self._check_api_key():
             return []
         _, pterodactyl = await self._get_pterodactyl()
         allowed = await self.conf.allow_restart()
@@ -89,7 +89,7 @@ class Pterodactyl(commands.Cog):
     @pterodactyl.command(name="list_servers")
     async def list_servers(self, ctx: discord.Interaction):
         """List all servers."""
-        if not self._check_api_key():
+        if not await self._check_api_key():
             await ctx.response.send_message("No API key set.", ephemeral=True)
             return
         url, pterodactyl = await self._get_pterodactyl()
@@ -107,7 +107,7 @@ class Pterodactyl(commands.Cog):
     @app_commands.autocomplete(server_name=server_autocomplete)  # type: ignore
     async def get_server_status(self, ctx: discord.Interaction, server_name: str):
         """Get the status of a server."""
-        if not self._check_api_key():
+        if not await self._check_api_key():
             await ctx.response.send_message("No API key set.", ephemeral=True)
             return
         url, pterodactyl = await self._get_pterodactyl()
@@ -123,7 +123,7 @@ class Pterodactyl(commands.Cog):
         check_or_x = CHECK_MARK if status.current_state == "running" else RED_X_MARK
         embed = (
             discord.Embed(
-                url=f"https://{url}/server/{server.identifier}", title=f"{server_name}"
+                url=f"{url}/server/{server.identifier}", title=f"{server_name}"
             )
             .add_field(name="Status", value=f"{check_or_x}")
             .add_field(
@@ -142,7 +142,7 @@ class Pterodactyl(commands.Cog):
     @app_commands.autocomplete(server_name=online_server_autocomplete)  # type: ignore
     async def restart_server(self, ctx: discord.Interaction, server_name: str):
         """Restart a server."""
-        if not self._check_api_key():
+        if not await self._check_api_key():
             await ctx.response.send_message("No API key set.", ephemeral=True)
             return
         _, pterodactyl = await self._get_pterodactyl()
