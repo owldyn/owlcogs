@@ -124,7 +124,7 @@ class Pterodactyl(commands.Cog):
         check_or_x = CHECK_MARK if status.current_state == "running" else RED_X_MARK
         embed = (
             discord.Embed(
-                url=f"{url}/server/{server.identifier}", title=f"{server_name}"
+                url=f"{url}/server/{server.identifier}", title=f"{server.name}"
             )
             .add_field(name="Status", value=f"{check_or_x}")
             .add_field(
