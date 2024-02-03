@@ -38,6 +38,7 @@ class Pterodactyl(commands.Cog):
     async def _check_api_key(self):
         if not await self.conf.pterodactyl_api_key() and not await self.conf.url():
             return False
+        return True
 
     async def _get_pterodactyl(self):
         url = await self.conf.url()
