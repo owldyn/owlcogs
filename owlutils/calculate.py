@@ -1,4 +1,5 @@
-import re 
+import re
+
 
 class Calculator:
     def __init__(self):
@@ -19,7 +20,10 @@ class Calculator:
     def calculate(self, expression):
         # remove all whitespace from the expression
         expression = expression.replace(" ", "").lower()
-        match = re.fullmatch(r'\d+(?:(\+|\-|\*|\/|plus|minus|times|dividedby|x|multipliedby)\d+)*', expression)
+        match = re.fullmatch(
+            r"[\(|\)|\.|\d]+(?:(\+|\-|\*|\/|plus|minus|times|dividedby|x|multipliedby)[\(|\)|\.|\d]+)*",
+            expression,
+        )
 
         # if there is no match, return None
         if match is None:
@@ -28,8 +32,7 @@ class Calculator:
         for word, operator in self.word_mapping.items():
             expression = expression.replace(word, operator)
         # evaluate the expression
-        result = eval(expression) #pylint: disable=eval-used
+        result = eval(expression)  # pylint: disable=eval-used
 
         # return the final result
         return result
-
