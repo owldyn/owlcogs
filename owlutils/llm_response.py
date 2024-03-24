@@ -112,7 +112,7 @@ class LLMMixin:
             )
             try:
                 response = f"This is an AI response from Hoobot:\n\n{chat_completion.choices[0].message.content}"
-                iterators = [iter(response)] * 3900
+                iterators = [iter(response)] * 1950
                 responses = ["".join(i) for i in list(zip(*iterators))]
                 if responses:
                     # if this isn't empty, it will need to be sent in multiple messages.
