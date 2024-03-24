@@ -26,7 +26,9 @@ class LLMMixin:
         config: dict
         async with self.conf.ai() as config:
             if setting_name not in config.keys():
-                await ctx.reply(f"{setting_name} not in settings. Options are: {config.keys()}")
+                await ctx.reply(
+                    f"{setting_name} not in settings. Options are: {config.keys()}"
+                )
             if setting_name == "enabled":
                 value = bool(value.lower() == "true")
             if setting_name == "system_message":
@@ -76,7 +78,9 @@ class LLMMixin:
                     messages.append(
                         {
                             "role": "system",
-                            "content": re.split("^hoobot, ?", msg.content, flags=re.IGNORECASE)[1],
+                            "content": re.split(
+                                "^hoobot, ?", msg.content, flags=re.IGNORECASE
+                            )[1],
                             "name": msg.author.name,
                         }
                     )
@@ -93,7 +97,9 @@ class LLMMixin:
         messages.append(
             {
                 "role": "user",
-                "content": re.split("^hoobot, ?", message.content, flags=re.IGNORECASE)[1],
+                "content": re.split("^hoobot, ?", message.content, flags=re.IGNORECASE)[
+                    1
+                ],
                 "name": message.author.name,
             }
         )
@@ -106,7 +112,14 @@ class LLMMixin:
             )
             try:
                 response = f"This is an AI response from Hoobot:\n\n{chat_completion.choices[0].message.content}"
-                await ctx.reply(response, mention_author=False)
+                iterators = [iter(response)] * 3900
+                responses = ["".join(i) for i in list(zip(*iterators))]
+                if responses:
+                    # if this isn't empty, it will need to be sent in multiple messages.
+                    for response in responses:
+                        await ctx.reply(response, mention_author=False)
+                else:
+                    await ctx.reply(response, mention_author=False)
             except AttributeError:
                 await ctx.reply(
                     f"There was no response from the AI. Try again, or say '{check_name} reset' to restart the conversation.",
