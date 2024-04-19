@@ -13,7 +13,6 @@ DISCORD_MAX_FILESIZE = 8388119
 
 
 class OwlUtils(LLMMixin, ListMixin, commands.Cog):
-
     """Small utils I'm making for myself."""
 
     CHECK_MARK = "✅"
@@ -30,7 +29,7 @@ class OwlUtils(LLMMixin, ListMixin, commands.Cog):
     }
 
     def __init__(self, bot):
-        self.bot = bot
+        self.bot: discord.Client = bot
         self.conf = Config.get_conf(self, identifier=26400736017)
         self.conf.register_global(**self.default_global_settings)
         self.ai_name = None
@@ -73,7 +72,9 @@ class OwlUtils(LLMMixin, ListMixin, commands.Cog):
         file_names = []
         reply = None
         for file in message.attachments:
-            if True in [file_ext in file.filename for file_ext in [".mp4", ".mkv", "webm"]]:
+            if True in [
+                file_ext in file.filename for file_ext in [".mp4", ".mkv", "webm"]
+            ]:
                 if "SPOILER_" in file.filename:
                     file_names.append(f"||{file.filename}||")
                 else:
@@ -87,7 +88,11 @@ class OwlUtils(LLMMixin, ListMixin, commands.Cog):
     async def get_users(self, ctx: discord.Interaction, current: str):
         """Gets users in the channel for completion"""
         self.log.debug(
-            [member.mention for member in ctx.channel.members if current in member.display_name]
+            [
+                member.mention
+                for member in ctx.channel.members
+                if current in member.display_name
+            ]
         )
         return [
             app_commands.Choice(name=member.display_name, value=member.mention)
@@ -96,7 +101,8 @@ class OwlUtils(LLMMixin, ListMixin, commands.Cog):
         ]
 
     @app_commands.command(
-        name="script_all_links", description="Make a script to download all links in this channel"
+        name="script_all_links",
+        description="Make a script to download all links in this channel",
     )
     @app_commands.autocomplete(user=get_users)
     async def script_all_links(self, ctx: discord.Interaction, user: str = None):
@@ -140,7 +146,9 @@ class OwlUtils(LLMMixin, ListMixin, commands.Cog):
         if "tenor.com" in message.content:
             await ctx.response.send_message(f"<{message.content}>", ephemeral=True)
         else:
-            await ctx.response.send_message("No tenor gifs found in that message.", ephemeral=True)
+            await ctx.response.send_message(
+                "No tenor gifs found in that message.", ephemeral=True
+            )
 
     @commands.command()
     async def tenor(self, ctx):
@@ -164,3 +172,18 @@ class OwlUtils(LLMMixin, ListMixin, commands.Cog):
                 urls.reverse()
                 for url in urls:
                     await ctx.send("<{}>".format(url))
+
+    @commands.command()
+    async def send_message(self, ctx, channel_id: str, *, message: str):
+        """Send a message in a channel as the bot!"""
+        try:
+            channel = self.bot.get_channel(int(channel_id))
+            if isinstance(
+                channel, discord.channel.TextChannel | discord.threads.Thread
+            ):
+                await channel.send(message)
+                await ctx.send("Sent!")
+                return
+        except Exception:
+            pass
+        await ctx.send("Failed to send message! Make sure I'm in that channel id!")
