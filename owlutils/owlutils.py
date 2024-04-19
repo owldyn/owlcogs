@@ -173,6 +173,7 @@ class OwlUtils(LLMMixin, ListMixin, commands.Cog):
                 for url in urls:
                     await ctx.send("<{}>".format(url))
 
+    @commands.is_owner()
     @commands.command()
     async def send_message(self, ctx, channel_id: str, *, message: str):
         """Send a message in a channel as the bot!"""
