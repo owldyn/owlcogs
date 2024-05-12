@@ -3,6 +3,8 @@ import re
 from tempfile import NamedTemporaryFile
 
 import discord
+import requests
+from discord.ext import tasks
 from redbot.core import Config, app_commands, commands
 
 from .calculate import Calculator
@@ -26,6 +28,7 @@ class OwlUtils(LLMMixin, ListMixin, commands.Cog):
             "system_message": None,
         },
         "list": {},
+        "health_check": {},
     }
 
     def __init__(self, bot):
@@ -40,6 +43,12 @@ class OwlUtils(LLMMixin, ListMixin, commands.Cog):
             name="Get Tenor Link", callback=self.tenor_context
         )
         self.bot.tree.add_command(self.ctx_menu)
+        self.health_check_url = ...
+        self.health_check.start()
+
+    async def cog_unload(self):
+        """unload"""
+        self.health_check.cancel()
 
     @commands.Cog.listener("on_message_without_command")
     async def calculate(self, message):
@@ -188,3 +197,28 @@ class OwlUtils(LLMMixin, ListMixin, commands.Cog):
         except Exception:
             pass
         await ctx.send("Failed to send message! Make sure I'm in that channel id!")
+
+    @tasks.loop(minutes=1)
+    async def health_check(self):
+        self.log.debug("Doing health check...")
+        if self.health_check_url is ...:
+            async with self.conf.health_check() as conf:
+                self.health_check_url = conf.get("url")
+        if self.health_check_url:
+            self.log.debug("Sending health check to %s", self.health_check_url)
+            requests.get(self.health_check_url)
+        else:
+            self.log.debug("Url not set for health check.")
+
+    @commands.is_owner()
+    @commands.command()
+    async def set_health_check_url(self, ctx: commands.Context, url: str):
+        if url == "empty":
+            url = None
+
+        async with self.conf.health_check() as conf:
+            conf["health_check_url"] = url
+
+        self.health_check_url = url
+        self.health_check.restart()
+        await ctx.react_quietly(self.CHECK_MARK)
