@@ -54,6 +54,7 @@ class Countdown(commands.Cog):
                         until = timestamp - datetime.now().timestamp()
                     else:
                         await self.bot.change_presence(activity=None)
+                        return
 
                 if until < 3600:
                     until_string = f"{int(until/60)} minutes until {name}!"
