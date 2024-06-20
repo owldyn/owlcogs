@@ -1,13 +1,9 @@
 import logging
-import time
 from datetime import datetime
-from types import SimpleNamespace
-from typing import Dict, TypedDict, Union
 
 import discord
-import pandas as pd
 from discord.ext import tasks
-from redbot.core import Config, app_commands, commands
+from redbot.core import Config, commands
 from redbot.core.bot import Red
 
 
