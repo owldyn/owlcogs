@@ -31,9 +31,7 @@ class Countdown(commands.Cog):
 
     @commands.is_owner()
     @commands.command()
-    async def delete_first_countdown(
-        self, ctx: commands.Context, timestamp: int, name: str
-    ):
+    async def delete_first_countdown(self, ctx):
         """Set the timestamp and name for a countdown"""
         async with self.conf.timestamp() as timestamp_:
             if len(timestamp_) > 0:
@@ -63,3 +61,6 @@ class Countdown(commands.Cog):
                 await self.bot.change_presence(
                     activity=discord.CustomActivity(name=until_string)
                 )
+            else:
+                await self.bot.change_presence(activity=None)
+                return
