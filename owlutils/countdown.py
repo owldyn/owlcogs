@@ -29,6 +29,18 @@ class Countdown(commands.Cog):
         self.update.restart()
         await ctx.react_quietly(":thumbsup:")
 
+    @commands.is_owner()
+    @commands.command()
+    async def delete_first_countdown(
+        self, ctx: commands.Context, timestamp: int, name: str
+    ):
+        """Set the timestamp and name for a countdown"""
+        async with self.conf.timestamp() as timestamp_:
+            if len(timestamp_) > 0:
+                del timestamp_[0]
+        self.update.restart()
+        await ctx.react_quietly(":thumbsup:")
+
     @tasks.loop(minutes=1)
     async def update(self):
         async with self.conf.timestamp() as data:
