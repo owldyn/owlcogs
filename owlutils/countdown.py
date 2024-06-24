@@ -57,7 +57,7 @@ class Countdown(commands.Cog):
                 if until < 3600:
                     until_string = f"{int(until/60)} minutes until {name}!"
                 else:
-                    until_string = f"{int(until/3600)} hours until {name}."
+                    until_string = f"{round(until/3600,1)} hours until {name}."
                 await self.bot.change_presence(
                     activity=discord.CustomActivity(name=until_string)
                 )
