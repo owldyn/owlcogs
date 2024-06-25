@@ -48,6 +48,10 @@ class Countdown(commands.Cog):
                 timestamp, name = data[0]
                 until = timestamp - datetime.now().timestamp()
                 if until < 0:
+                    if until > -300:
+                        await self.bot.change_presence(
+                            activity=discord.CustomActivity(name=f"{name} is here!")
+                        )
                     del data[0]
                     if len(data) > 0:
                         timestamp, name = data[0]
