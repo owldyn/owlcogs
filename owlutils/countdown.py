@@ -24,8 +24,10 @@ class Countdown(commands.Cog):
         self, ctx: commands.Context, timestamp: int, name: str
     ):
         """Set the timestamp and name for a countdown"""
+        timestamp_: list
         async with self.conf.timestamp() as timestamp_:
             timestamp_.append((timestamp, name))
+            timestamp_.sort(key=lambda x: x[0])
         self.update.restart()
         await ctx.react_quietly(":thumbsup:")
 
