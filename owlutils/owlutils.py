@@ -43,7 +43,6 @@ class OwlUtils(LLMMixin, ListMixin, commands.Cog):
             name="Get Tenor Link", callback=self.tenor_context
         )
         self.bot.tree.add_command(self.ctx_menu)
-        self.health_check_url = ...
         self.health_check.start()
 
     async def cog_unload(self):
@@ -201,12 +200,11 @@ class OwlUtils(LLMMixin, ListMixin, commands.Cog):
     @tasks.loop(minutes=1)
     async def health_check(self):
         self.log.debug("Doing health check...")
-        if self.health_check_url is ...:
-            async with self.conf.health_check() as conf:
-                self.health_check_url = conf.get("url")
-        if self.health_check_url:
-            self.log.debug("Sending health check to %s", self.health_check_url)
-            requests.get(self.health_check_url)
+        async with self.conf.health_check() as conf:
+            health_check_url = conf.get("url")
+        if health_check_url:
+            self.log.debug("Sending health check to %s", health_check_url)
+            requests.get(health_check_url)
         else:
             self.log.debug("Url not set for health check.")
 
@@ -219,6 +217,5 @@ class OwlUtils(LLMMixin, ListMixin, commands.Cog):
         async with self.conf.health_check() as conf:
             conf["health_check_url"] = url
 
-        self.health_check_url = url
         self.health_check.restart()
         await ctx.react_quietly(self.CHECK_MARK)
