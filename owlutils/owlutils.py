@@ -201,7 +201,7 @@ class OwlUtils(LLMMixin, ListMixin, commands.Cog):
     async def health_check(self):
         self.log.debug("Doing health check...")
         async with self.conf.health_check() as conf:
-            health_check_url = conf.get("url")
+            health_check_url = conf.get("health_check_url")
         if health_check_url:
             self.log.debug("Sending health check to %s", health_check_url)
             if not (response := requests.get(health_check_url)).ok:
