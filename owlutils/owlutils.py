@@ -207,7 +207,7 @@ class OwlUtils(LLMMixin, ListMixin, commands.Cog):
             if not (response := requests.get(health_check_url)).ok:
                 self.log.warning("%s %s", response, response.content)
         else:
-            self.log.debug("Url not set for health check.")
+            self.log.info("Url not set for health check.")
 
     @commands.is_owner()
     @commands.command()
