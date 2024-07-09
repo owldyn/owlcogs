@@ -107,22 +107,22 @@ class StatusSnooper(commands.Cog):
         for s in status_changes:
             steps.append(
                 {
-                    "": 1,
-                    "start": datetime.fromtimestamp(last),
-                    "finish": datetime.fromtimestamp(s["timestamp"]),
+                    "": "",
+                    "start": datetime.fromtimestamp(last).isoformat(" ", "seconds"),
+                    "finish": datetime.fromtimestamp(s["timestamp"]).isoformat(" ", "seconds"),
                     "status": s["before"],
                 }
             )
             last = s["timestamp"]
         steps.append(
             {
-                "": 1,
-                "start": datetime.fromtimestamp(last),
-                "finish": datetime.fromtimestamp(datetime.now().timestamp()),
+                "": "",
+                "start": datetime.fromtimestamp(last).isoformat(" ", "seconds"),
+                "finish": datetime.fromtimestamp(datetime.now().timestamp()).isoformat(" ", "seconds"),
                 "status": s["after"],
             }
         )
-        df = pd.DataFrame(steps)
+        df = pd.DataFrame(steps, dtype=str)
         timeline = pex.timeline(
             df,
             x_start="start",
