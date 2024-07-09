@@ -165,6 +165,7 @@ class StatusSnooper(commands.Cog):
                             recent, currently_online, currently_offline, member
                         ),
                         file=discord.File(BytesIO(image.read()), filename="plot.png"),
+                        ephemeral=True
                     )
 
         except (AttributeError, IndexError, KeyError):
