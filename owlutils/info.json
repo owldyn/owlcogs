@@ -1,5 +1,8 @@
 {
-    "requirements": [
-      "openai"
-    ]
-  }
+  "requirements": [
+    "openai",
+    "plotly",
+    "pandas",
+    "kaleido"
+  ]
+}

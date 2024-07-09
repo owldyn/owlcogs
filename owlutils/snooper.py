@@ -1,9 +1,14 @@
+import contextlib
 import logging
 import time
-from types import SimpleNamespace
+from datetime import datetime, timedelta
+from io import BytesIO
+from tempfile import NamedTemporaryFile
 from typing import Dict, Union
 
 import discord
+import pandas as pd
+import plotly.express as pex
 from redbot.core import Config, app_commands, commands
 from redbot.core.bot import Red
 
@@ -18,7 +23,9 @@ class StatusSnooper(commands.Cog):
         self.conf = Config.get_conf(self, identifier=4007)
         self.conf.register_global(**self.default_global_settings)
         self.log = logging.getLogger("StatusSnooper")
-        self.ctx_menu = app_commands.ContextMenu(name="Last Online", callback=self.last_online)
+        self.ctx_menu = app_commands.ContextMenu(
+            name="Last Online", callback=self.last_online
+        )
         self.bot.tree.add_command(self.ctx_menu)
 
     @commands.Cog.listener("on_presence_update")
@@ -67,7 +74,11 @@ class StatusSnooper(commands.Cog):
             current_data["activity"] = []
 
     def _get_message(
-        self, recent: dict, currently_online: bool, currently_offline: bool, member: discord.Member
+        self,
+        recent: dict,
+        currently_online: bool,
+        currently_offline: bool,
+        member: discord.Member,
     ):
         try:
             if currently_online:
@@ -84,46 +95,106 @@ class StatusSnooper(commands.Cog):
         except KeyError as k_e:
             return f"{member.display_name} has never been {k_e.args[0]} in my history."
 
+    @contextlib.contextmanager
+    def generate_image(self, times: list[dict]):
+        last_day = int((datetime.now() - timedelta(days=1)).timestamp())
+
+        self.log.info("Parsing through %s entries in user status history..", len(times))
+        status_changes = [s for s in times if s["timestamp"] >= last_day]
+        self.log.info("Parsed down to %s entries for the graph.", len(status_changes))
+        last = last_day
+        steps = []
+        for s in status_changes:
+            steps.append(
+                {
+                    "": 1,
+                    "start": datetime.fromtimestamp(last),
+                    "finish": datetime.fromtimestamp(s["timestamp"]),
+                    "status": s["before"],
+                }
+            )
+            last = s["timestamp"]
+        steps.append(
+            {
+                "": 1,
+                "start": datetime.fromtimestamp(last),
+                "finish": datetime.fromtimestamp(datetime.now().timestamp()),
+                "status": s["after"],
+            }
+        )
+        df = pd.DataFrame(steps)
+        timeline = pex.timeline(
+            df,
+            x_start="start",
+            x_end="finish",
+            y="",
+            color="status",
+            height=250,
+            color_discrete_map={
+                "online": "green",
+                "idle": "orange",
+                "dnd": "red",
+                "offline": "gray",
+            },
+        )
+        with NamedTemporaryFile() as tmpf:
+            timeline.write_image(tmpf)
+            tmpf.seek(0)
+            yield tmpf
+
     @app_commands.guild_only()
     async def last_online(
         self, ctx: discord.Interaction, member: Union[discord.Member, discord.User]
     ):
         """Sends when the user was last online or offline."""
-
         try:
             # Have to fetch the member manually from the guild
             # Because for some reason it passed it with it always offline on app interaction.
             member = next((m for m in ctx.guild.members if m.id == member.id), member)
             currently_online = member.status == discord.Status.online
-            currently_offline = member.status in [discord.Status.offline, discord.Status.invisible]
+            currently_offline = member.status in [
+                discord.Status.offline,
+                discord.Status.invisible,
+            ]
             async with self.conf.users() as users:
                 recent = users[str(member.id)]["most_recent"]
+
+                with self.generate_image(users[str(member.id)]["status"]) as image:
+                    await ctx.response.send_message(
+                        self._get_message(
+                            recent, currently_online, currently_offline, member
+                        ),
+                        file=discord.File(BytesIO(image.read()), filename="plot.png"),
+                    )
+
         except (AttributeError, IndexError, KeyError):
             await ctx.response.send_message(
                 "I don't have any history on that user.", ephemeral=True
             )
             return
-        message = self._get_message(recent, currently_online, currently_offline, member)
-        await ctx.response.send_message(
-            message,
-            ephemeral=True,
-        )
 
     @commands.command("last_online")
     @commands.is_owner()
     async def last_online_old(self, ctx: commands.Context, user_id: str):
         """! command for last_online for testing"""
         try:
-            member = next((m for m in self.bot.get_all_members() if str(m.id) == user_id), None)
+            member = next(
+                (m for m in self.bot.get_all_members() if str(m.id) == user_id), None
+            )
             if not member:
                 await ctx.reply("That user doesn't exist.", mention_author=False)
                 return
             currently_online = member.status == discord.Status.online
-            currently_offline = member.status in [discord.Status.offline, discord.Status.invisible]
+            currently_offline = member.status in [
+                discord.Status.offline,
+                discord.Status.invisible,
+            ]
             async with self.conf.users() as users:
                 recent = users[str(member.id)]["most_recent"]
         except (AttributeError, IndexError, KeyError):
-            await ctx.reply("I don't have any history on that user.", mention_author=False)
+            await ctx.reply(
+                "I don't have any history on that user.", mention_author=False
+            )
             return
         message = self._get_message(recent, currently_online, currently_offline, member)
 

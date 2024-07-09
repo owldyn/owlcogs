@@ -16,3 +16,6 @@ py-dactyl
 kubernetes
 paramiko
 ipykernel
+plotly
+pandas
+kaleido
