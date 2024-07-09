@@ -137,6 +137,7 @@ class StatusSnooper(commands.Cog):
                 "offline": "gray",
             },
         )
+        timeline.update_traces(marker_line_width=0)
         with NamedTemporaryFile() as tmpf:
             timeline.write_image(tmpf)
             tmpf.seek(0)
