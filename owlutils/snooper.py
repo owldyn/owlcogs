@@ -108,18 +108,18 @@ class StatusSnooper(commands.Cog):
             steps.append(
                 {
                     "": "",
-                    "start": datetime.fromtimestamp(last).isoformat(" ", "seconds"),
-                    "finish": datetime.fromtimestamp(s["timestamp"]).isoformat(" ", "seconds"),
-                    "status": s["before"],
+                    "start": str(datetime.fromtimestamp(last).isoformat(" ", "seconds")),
+                    "finish": str(datetime.fromtimestamp(s["timestamp"]).isoformat(" ", "seconds")),
+                    "status": str(s["before"]),
                 }
             )
             last = s["timestamp"]
         steps.append(
             {
                 "": "",
-                "start": datetime.fromtimestamp(last).isoformat(" ", "seconds"),
-                "finish": datetime.fromtimestamp(datetime.now().timestamp()).isoformat(" ", "seconds"),
-                "status": s["after"],
+                "start": str(datetime.fromtimestamp(last).isoformat(" ", "seconds")),
+                "finish": str(datetime.fromtimestamp(datetime.now().timestamp()).isoformat(" ", "seconds")),
+                "status": str(s["after"]),
             }
         )
         df = pd.DataFrame(steps, dtype=str)
