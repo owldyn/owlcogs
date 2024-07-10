@@ -159,9 +159,9 @@ class StatusSnooper(commands.Cog):
             ]
             async with self.conf.users() as users:
                 recent = users[str(member.id)]["most_recent"]
-
+                await ctx.response.defer(ephemeral=True)
                 with self.generate_image(users[str(member.id)]["status"]) as image:
-                    await ctx.response.send_message(
+                    await ctx.followup.send(
                         self._get_message(
                             recent, currently_online, currently_offline, member
                         ),
