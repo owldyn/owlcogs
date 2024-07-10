@@ -171,7 +171,7 @@ class StatusSnooper(commands.Cog):
                     )
 
         except (AttributeError, IndexError, KeyError):
-            await ctx.response.send_message(
+            await ctx.followup.send(
                 "I don't have any history on that user.", ephemeral=True
             )
             return
