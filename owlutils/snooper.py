@@ -148,6 +148,7 @@ class StatusSnooper(commands.Cog):
         self, ctx: discord.Interaction, member: Union[discord.Member, discord.User]
     ):
         """Sends when the user was last online or offline."""
+        await ctx.response.defer(ephemeral=True)
         try:
             # Have to fetch the member manually from the guild
             # Because for some reason it passed it with it always offline on app interaction.
@@ -159,7 +160,7 @@ class StatusSnooper(commands.Cog):
             ]
             async with self.conf.users() as users:
                 recent = users[str(member.id)]["most_recent"]
-                await ctx.response.defer(ephemeral=True)
+                
                 with self.generate_image(users[str(member.id)]["status"]) as image:
                     await ctx.followup.send(
                         self._get_message(
