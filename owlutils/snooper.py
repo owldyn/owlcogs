@@ -103,6 +103,7 @@ class StatusSnooper(commands.Cog):
         status_changes = [s for s in times if s["timestamp"] >= last_day]
         if not status_changes:
             yield None
+            return
         self.log.info("Parsed down to %s entries for the graph.", len(status_changes))
         last = last_day
         steps = []
