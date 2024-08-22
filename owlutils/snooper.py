@@ -101,6 +101,9 @@ class StatusSnooper(commands.Cog):
 
         self.log.info("Parsing through %s entries in user status history..", len(times))
         status_changes = [s for s in times if s["timestamp"] >= last_day]
+        if not status_changes:
+            yield None
+            return
         self.log.info("Parsed down to %s entries for the graph.", len(status_changes))
         last = last_day
         steps = []
@@ -108,8 +111,12 @@ class StatusSnooper(commands.Cog):
             steps.append(
                 {
                     "": "",
-                    "start": str(datetime.fromtimestamp(last).isoformat(" ", "seconds")),
-                    "finish": str(datetime.fromtimestamp(s["timestamp"]).isoformat(" ", "seconds")),
+                    "start": str(
+                        datetime.fromtimestamp(last).isoformat(" ", "seconds")
+                    ),
+                    "finish": str(
+                        datetime.fromtimestamp(s["timestamp"]).isoformat(" ", "seconds")
+                    ),
                     "status": str(s["before"]),
                 }
             )
@@ -118,7 +125,11 @@ class StatusSnooper(commands.Cog):
             {
                 "": "",
                 "start": str(datetime.fromtimestamp(last).isoformat(" ", "seconds")),
-                "finish": str(datetime.fromtimestamp(datetime.now().timestamp()).isoformat(" ", "seconds")),
+                "finish": str(
+                    datetime.fromtimestamp(datetime.now().timestamp()).isoformat(
+                        " ", "seconds"
+                    )
+                ),
                 "status": str(s["after"]),
             }
         )
@@ -148,6 +159,7 @@ class StatusSnooper(commands.Cog):
         self, ctx: discord.Interaction, member: Union[discord.Member, discord.User]
     ):
         """Sends when the user was last online or offline."""
+        await ctx.response.defer(ephemeral=True)
         try:
             # Have to fetch the member manually from the guild
             # Because for some reason it passed it with it always offline on app interaction.
@@ -159,18 +171,22 @@ class StatusSnooper(commands.Cog):
             ]
             async with self.conf.users() as users:
                 recent = users[str(member.id)]["most_recent"]
-                await ctx.response.defer(ephemeral=True)
+
                 with self.generate_image(users[str(member.id)]["status"]) as image:
-                    await ctx.followup.send(
-                        self._get_message(
+                    kwargs = {
+                        "content": self._get_message(
                             recent, currently_online, currently_offline, member
                         ),
-                        file=discord.File(BytesIO(image.read()), filename="plot.png"),
-                        ephemeral=True
-                    )
+                        "ephemeral": True,
+                    }
+                    if image:
+                        kwargs["file"] = discord.File(
+                            BytesIO(image.read()), filename="plot.png"
+                        )
+                    await ctx.followup.send(**kwargs)
 
         except (AttributeError, IndexError, KeyError):
-            await ctx.response.send_message(
+            await ctx.followup.send(
                 "I don't have any history on that user.", ephemeral=True
             )
             return
