@@ -15,13 +15,14 @@ class Calculator:
             "dividedby": "/",
             "tothepowerof": "^",
             "x": "*",
+            "modulo": "%",
         }
 
     def calculate(self, expression):
         # remove all whitespace from the expression
         expression = expression.replace(" ", "").lower()
         match = re.fullmatch(
-            r"[\(|\)|\.|\d]+(?:(\+|\-|\*|\/|plus|minus|times|dividedby|x|multipliedby)[\(|\)|\.|\d]+)*",
+            r"[\(|\)|\.|\d]+(?:(\+|\-|\*|\/|plus|minus|times|dividedby|x|multipliedby|modulo|\%)[\(|\)|\.|\d]+)*",
             expression,
         )
 
