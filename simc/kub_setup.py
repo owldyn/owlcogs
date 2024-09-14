@@ -14,6 +14,7 @@ except Exception:
 
 log = logging.getLogger("Kubernetes")
 
+
 class KubernetesWrapper:
     def __init__(self, namespace: str, pvc_name: str) -> None:
         self.api = client.BatchV1Api()
@@ -59,7 +60,7 @@ class KubernetesWrapper:
         times = 0
         # fail loop at 1200 seconds (20 minutes) so it doesn't hang indefinitely.
         while times < 1200:
-            wait = 5
+            wait = 20
             for jorb in self.api.list_namespaced_job(self.namespace).items:
                 if not jorb.metadata:
                     continue
@@ -67,7 +68,7 @@ class KubernetesWrapper:
                     log.info(jorb)
                     await asyncio.sleep(5)
                     wait -= 5
-                    if not jorb.status.active:
+                    if jorb.status.completion_time or jorb.status.succeeded or jorb.status.failed:
                         return True
                 else:
                     continue
@@ -75,7 +76,7 @@ class KubernetesWrapper:
                 # So we exit.
                 times = 1200
             await asyncio.sleep(wait)
-            times += 5
+            times += 20
         return False
 
     def delete_job(self, name: str):
