@@ -1,4 +1,5 @@
 import asyncio
+import logging
 import time
 from typing import Optional, cast
 
@@ -10,6 +11,8 @@ try:
 except Exception:
     config.load_kube_config("/workspaces/owlcogs/redbotdata/kube.config")
 
+
+log = logging.getLogger("Kubernetes")
 
 class KubernetesWrapper:
     def __init__(self, namespace: str, pvc_name: str) -> None:
@@ -61,7 +64,7 @@ class KubernetesWrapper:
                 if not jorb.metadata:
                     continue
                 if jorb.metadata.name == job.metadata.name:
-                    self.log.info(jorb.metadata)
+                    log.info(jorb.metadata)
                     await asyncio.sleep(5)
                     wait -= 5
                     if not jorb.status.active:
