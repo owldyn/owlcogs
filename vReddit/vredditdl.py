@@ -1,18 +1,19 @@
 # pylint: disable=subprocess-run-check
+import asyncio
+import io
+import os
+import re
+import subprocess
+import time
 from operator import sub
 from typing import DefaultDict
-from asyncpraw import reddit
-from redbot.core import Config, checks, commands
-import asyncio
-import time
-import subprocess
-import os
-import io
-import discord
-import re
+
 import asyncpraw as praw
+import discord
 import requests as req
 import youtube_dl
+from asyncpraw import reddit
+from redbot.core import Config, checks, commands
 
 
 class VRedditDL(commands.Cog):
@@ -520,7 +521,7 @@ class VRedditDL(commands.Cog):
     async def autoredditlink(self, message):
         if message.author.bot:
             return
-        if message.guild.id in await self.conf.guilds_ignored():
+        if message.guild and message.guild.id in await self.conf.guilds_ignored():
             return
         if message.channel.id in await self.conf.channels_ignored():
             return

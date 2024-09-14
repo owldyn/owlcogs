@@ -1,7 +1,7 @@
 import re
-import discord
 
-from redbot.core import checks, Config, commands
+import discord
+from redbot.core import Config, checks, commands
 
 
 class Yw(commands.Cog):
@@ -59,7 +59,7 @@ class Yw(commands.Cog):
     async def yw(self, message):
         if message.author.bot:
             return
-        if message.guild.id in await self.conf.guilds_ignored():
+        if message.guild and message.guild.id in await self.conf.guilds_ignored():
             return
         if message.channel.id in await self.conf.channels_ignored():
             return
