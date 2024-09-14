@@ -56,10 +56,13 @@ class KubernetesWrapper:
         times = 0
         # fail loop at 1200 seconds (20 minutes) so it doesn't hang indefinitely.
         while times < 1200:
+            wait = 5
             for jorb in self.api.list_namespaced_job(self.namespace).items:
                 if not jorb.metadata:
                     continue
                 if jorb.metadata.name == job.metadata.name:
+                    await asyncio.sleep(5)
+                    wait -= 5
                     if not jorb.status.active:
                         return True
                 else:
@@ -67,7 +70,7 @@ class KubernetesWrapper:
                 # If it doesn't return or continue, the job doesn't exist anymore.
                 # So we exit.
                 times = 1200
-            await asyncio.sleep(5)
+            await asyncio.sleep(wait)
             times += 5
         return False
 
