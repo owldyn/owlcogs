@@ -61,6 +61,7 @@ class KubernetesWrapper:
                 if not jorb.metadata:
                     continue
                 if jorb.metadata.name == job.metadata.name:
+                    self.log.info(jorb.metadata)
                     await asyncio.sleep(5)
                     wait -= 5
                     if not jorb.status.active:
