@@ -58,25 +58,23 @@ class KubernetesWrapper:
 
     async def watch(self, job: client.V1Job):
         times = 0
+        wait = 5
         # fail loop at 1200 seconds (20 minutes) so it doesn't hang indefinitely.
         while times < 1200:
-            wait = 20
             for jorb in self.api.list_namespaced_job(self.namespace).items:
                 if not jorb.metadata:
                     continue
                 if jorb.metadata.name == job.metadata.name:
-                    log.info(jorb)
-                    await asyncio.sleep(5)
-                    wait -= 5
-                    if jorb.status.completion_time or jorb.status.succeeded or jorb.status.failed:
+                    if (
+                        jorb.status.completion_time
+                        or jorb.status.succeeded
+                        or jorb.status.failed
+                    ):
                         return True
-                else:
-                    continue
-                # If it doesn't return or continue, the job doesn't exist anymore.
-                # So we exit.
-                times = 1200
+                    else:
+                        continue
             await asyncio.sleep(wait)
-            times += 20
+            times += wait
         return False
 
     def delete_job(self, name: str):
