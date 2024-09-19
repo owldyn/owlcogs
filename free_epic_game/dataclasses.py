@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 from datetime import datetime
 from typing import List, Union
+from urllib.parse import quote
 
 from discord import Embed
 from jsonpath_ng import parse
@@ -87,7 +88,7 @@ class GameInfo:
     def embed(self):
         """Return an embed"""
         embed = Embed(title=self.title, description=self.desc, url=self.url)
-        embed.set_image(url=self.thumbnail_url)
+        embed.set_image(url=quote(self.thumbnail_url, safe=":/?&=)"))
         if self.end_date:
             end_footer = f"Ends on {self.end_date.strftime(r'%Y-%m-%d')}"
         else:

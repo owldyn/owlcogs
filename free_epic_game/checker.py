@@ -75,8 +75,9 @@ class EpicGamesChecker(commands.Cog):
     @commands.is_owner()
     async def run_now(self, ctx: discord.Interaction, force: str = ""):
         force = bool(force)  # fix the type of force for the check
+        await ctx.response.defer(ephemeral=True)
         await self.check(force)
-        await ctx.response.send_message("Done!", ephemeral=True)
+        await ctx.followup.send("Done!", ephemeral=True)
 
     async def _handle_fails(self):
         """Handles epic failing"""
