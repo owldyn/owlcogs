@@ -20,7 +20,7 @@ class Calculator:
 
     def calculate(self, expression):
         # remove all whitespace from the expression
-        expression = expression.replace(" ", "").lower()
+        expression = expression.replace(" ", "").replace("`", "").lower()
         match = re.fullmatch(
             r"[\(|\)|\.|\d]+(?:(\+|\-|\*|\/|plus|minus|times|dividedby|x|multipliedby|modulo|\%)[\(|\)|\.|\d]+)*",
             expression,
