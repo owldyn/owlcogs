@@ -1,4 +1,6 @@
 import abc
+import asyncio
+import functools
 import logging
 from enum import Enum, auto
 from io import BytesIO
@@ -31,6 +33,7 @@ class MessageBuilder(abc.ABC):
         content=None,
         footer=None,
         image=None,
+        bare_link=None,
     ) -> None:
         self.title = (
             title[:255] if title else title
@@ -47,6 +50,7 @@ class MessageBuilder(abc.ABC):
             self.footer += "\nTitle may be cut off."
         self._type = None
         self._send_kwargs = None
+        self.bare_link = bare_link
 
     @abc.abstractmethod
     def prettify_embed(self, output):
@@ -71,7 +75,7 @@ class MessageBuilder(abc.ABC):
             elif self.image is not None:
                 self._upload_image_embed(output)
                 self._type = self.MessageTypes.IMAGE_EMBED
-            elif self.content is not None:
+            elif self.content is not None or self.bare_link is not None:
                 self._plain_message(output)
                 self._type = self.MessageTypes.PLAIN_MESSAGE
             elif not self.video:
@@ -96,10 +100,10 @@ class MessageBuilder(abc.ABC):
 
     def _plain_message(self, output):
         if self.spoiler:
-            content = self._make_spoiler_text(self.content)
+            content = self._make_spoiler_text(self.content or self.bare_link)
             output["content"] = content
         else:
-            output["content"] = self.content
+            output["content"] = self.content or self.bare_link
 
     def _multi_embed(self, output):
         embeds = []
@@ -130,6 +134,8 @@ class MessageBuilder(abc.ABC):
             embed.set_image(url=self.image_url)
             self._type = self.MessageTypes.IMAGE_EMBED
         output["embed"] = embed
+        if self.bare_link:
+            output["content"] = self.bare_link
 
     def _upload_image_embed(self, output):
         embed = discord.Embed(title=self.title)
@@ -292,4 +298,6 @@ class AbstractProcessor(abc.ABC):
         Returns:
             dict: all of the returns
         """
-        return self.verify_link(url, audio, **kwargs)
+        return await asyncio.get_event_loop().run_in_executor(
+            None, functools.partial(self.verify_link, url, audio, **kwargs)
+        )

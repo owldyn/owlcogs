@@ -111,6 +111,8 @@ class RedditProcessor(AbstractProcessor):
             for file_type in [".png", ".jpg", ".jpeg", ".webp", ".bmp"]
         ]:
             return self._process_image(reddit_post, match)
+        if "youtube" in imglink or "youtu.be" in imglink:
+            return self._process_youtube(reddit_post, match)
         try:
             # Try to it through the article matcher
             return self._process_article(reddit_post, match)
@@ -141,6 +143,22 @@ class RedditProcessor(AbstractProcessor):
                 "comments": comments,
             }
         raise self.InvalidURL("Self post is too long!")
+
+    def _process_youtube(self, reddit_post, match):
+        title = reddit_post.title
+        comments = self._process_comments(match)
+        return {
+            "post": [
+                self.MessageBuilder(
+                    title=title,
+                    url=self._reddit_link(reddit_post),
+                    spoiler=self.spoiler,
+                    footer=self.footer,
+                ),
+                self.MessageBuilder(bare_link=reddit_post.url),
+            ],
+            "comments": comments,
+        }
 
     @staticmethod
     def _reddit_link(reddit_post):
