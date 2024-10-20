@@ -137,6 +137,7 @@ class MediaLinks(commands.Cog):
                     if matches:
                         # if -m is in the message,
                         audio = bool(re.match(r".* -m(?=\s|$)", msg_content))
+                        comment_only = bool(re.match(r".* -c(?=\s|$)", msg_content))
                         spoiler = False
                         if "as spoiler" in msg_content:
                             spoiler = True
@@ -144,7 +145,7 @@ class MediaLinks(commands.Cog):
                             "".join(list(match)) for match in matches
                         ]  # findall returns the groups separated.
                         await self.process_link(
-                            processor, matches, ctx, name, spoiler, audio
+                            processor, matches, ctx, name, spoiler, audio, comment_only
                         )
                         break
 
@@ -170,6 +171,7 @@ class MediaLinks(commands.Cog):
         processor_name: str,
         spoiler: bool = False,
         audio: bool = False,
+        comment_only:bool = False
     ):
         async with ctx.typing():
             try:
@@ -191,7 +193,7 @@ class MediaLinks(commands.Cog):
                     ) as exc:  # this shouldn't ever happen? but jic
                         await ctx.send(exc)
                         return
-                    messages = message_dict.get("post")
+                    messages = message_dict.get("post") if not comment_only else []
                     comment = message_dict.get("comments", None)
                     messages_to_send = []
                     if isinstance(messages, list):
