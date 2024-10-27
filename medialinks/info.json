@@ -1,15 +1,16 @@
 {
-    "requirements": [
-      "requests",
-      "yt-dlp",
-      "youtube-dl",
-      "asyncpraw",
-      "praw",
-      "tweepy",
-      "pixiv-api",
-      "python-magic",
-      "numpy",
-      "sumy",
-      "nltk"
-    ]
-  }
+  "requirements": [
+    "lxml[html_clean]",
+    "requests",
+    "yt-dlp",
+    "youtube-dl",
+    "asyncpraw",
+    "praw",
+    "tweepy",
+    "pixiv-api",
+    "python-magic",
+    "numpy",
+    "sumy",
+    "nltk"
+  ]
+}
