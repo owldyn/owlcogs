@@ -16,13 +16,14 @@ class Calculator:
             "tothepowerof": "^",
             "x": "*",
             "modulo": "%",
+            "^": "**",
         }
 
     def calculate(self, expression):
         # remove all whitespace from the expression
         expression = expression.replace(" ", "").replace("`", "").lower()
         match = re.fullmatch(
-            r"[\(|\)|\.|\d]+(?:(\+|\-|\*|\/|plus|minus|times|dividedby|x|multipliedby|modulo|\%)[\(|\)|\.|\d]+)*",
+            r"[\(|\)|\.|\d]+(?:(\+|\-|\*|\/|plus|minus|times|dividedby|x|multipliedby|modulo|\%|\^)[\(|\)|\.|\d]+)*",
             expression,
         )
 
@@ -32,6 +33,7 @@ class Calculator:
         # replace words with operators
         for word, operator in self.word_mapping.items():
             expression = expression.replace(word, operator)
+        
         # evaluate the expression
         result = eval(expression)  # pylint: disable=eval-used
 
