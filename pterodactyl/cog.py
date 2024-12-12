@@ -1,11 +1,11 @@
+import asyncio
 import logging
 from concurrent.futures import ThreadPoolExecutor
 
 import discord
 from discord.interactions import Interaction
-from redbot.core import Config, app_commands
+from redbot.core import Config, app_commands, commands
 from redbot.core import bot as red_bot
-from redbot.core import commands
 
 from . import permissions
 from .api_wrapper import PterodactylAPI
@@ -25,6 +25,7 @@ class Pterodactyl(commands.Cog):
             url=None,
             nodes={},
             allow_restart=[],
+            allow_reinstall=[],
         )
         self.log = logging.getLogger("owlcogs.Pterodactyl")
 
@@ -59,23 +60,40 @@ class Pterodactyl(commands.Cog):
             if current in server.name
         ]
 
+    async def _get_server_statuses(self, pterodactyl: PterodactylAPI, servers: list):
+        return [
+            serv
+            for serv in await asyncio.gather(
+                *[
+                    asyncio.get_event_loop().run_in_executor(
+                        None, pterodactyl.get_server_status, s.value
+                    )
+                    for s in servers
+                ],
+                return_exceptions=False,
+            )
+            if serv
+        ]
+
     async def online_server_autocomplete(self, ctx: discord.Interaction, current: str):
+        await ctx.response.defer()
         if not await self._check_api_key():
             return []
-        _, pterodactyl = await self._get_pterodactyl()
         allowed = await self.conf.allow_restart()
-        servers = pterodactyl.get_servers()
         servers = await self.server_autocomplete(ctx, current)
-        servers = [server for server in servers if server.value in allowed]
-        with ThreadPoolExecutor() as pool:
-            server_statuses = pool.map(
-                pterodactyl.get_server_status, [server.value for server in servers]
-            )
-        response = [
-            server
-            for server, status in zip(servers, server_statuses)
-            if status.current_state == "running" and server.value in allowed
-        ]
+        response = [server for server in servers if server.value in allowed]
+        self.log.debug(response)
+        return response
+
+    async def reinstall_server_autocomplete(
+        self, ctx: discord.Interaction, current: str
+    ):
+        await ctx.response.defer()
+        if not await self._check_api_key():
+            return []
+        allowed = await self.conf.allow_reinstall()
+        servers = await self.server_autocomplete(ctx, current)
+        response = [server for server in servers if server.value in allowed]
         self.log.debug(response)
         return response
 
@@ -119,6 +137,9 @@ class Pterodactyl(commands.Cog):
             )
             return
         status = pterodactyl.get_server_status(server)
+        if not status:
+            await ctx.response.send_message("Failed to retrieve server data.")
+            return
         memory_mb = status.memory_bytes / 1024 / 1024
         memory_percent = memory_mb / server.limits.memory
         check_or_x = CHECK_MARK if status.current_state == "running" else RED_X_MARK
@@ -157,6 +178,30 @@ class Pterodactyl(commands.Cog):
             await ctx.response.send_message(f"Server {server.name} restarted.")
         else:
             await ctx.response.send_message(
+                "Server returned unknown value.", ephemeral=True
+            )
+
+    @pterodactyl.command(name="reinstall_server")
+    @app_commands.autocomplete(server_name=reinstall_server_autocomplete)
+    async def reinstall_server(self, ctx: discord.Interaction, server_name: str):
+        """Restart a server."""
+        await ctx.response.defer()
+        if not await self._check_api_key():
+            await ctx.response.send_message("No API key set.", ephemeral=True)
+            return
+        _, pterodactyl = await self._get_pterodactyl()
+
+        if not (server := pterodactyl.get_servers_dict().get(server_name)):
+            await ctx.response.send_message(
+                f"Server {server_name} not found.", ephemeral=True
+            )
+            return
+        worked = await pterodactyl.reinstall_server(server)
+        await ctx.followup.send("Server is reinstalling...")
+        if worked:
+            await ctx.followup.send(f"Server {server.name} reinstalled.")
+        else:
+            await ctx.followup.send(
                 "Server returned unknown value.", ephemeral=True
             )
 
@@ -218,6 +263,27 @@ class Pterodactyl(commands.Cog):
     async def remove_restart(self, ctx: discord.Interaction, server_name: str):
         """Allow restarts of servers."""
         async with self.conf.allow_restart() as allowed:
+            try:
+                allowed.remove(server_name)
+            except ValueError:
+                pass
+        await ctx.response.send_message("Done.", ephemeral=True)
+
+    @pterodactyl.command(name="allow_reinstall")
+    @permissions.is_owner()
+    @app_commands.autocomplete(server_name=server_autocomplete)
+    async def allow_reinstall(self, ctx: discord.Interaction, server_name: str):
+        """Allow reinstall of servers."""
+        async with self.conf.allow_reinstall() as allowed:
+            allowed.append(server_name)
+        await ctx.response.send_message("Done.", ephemeral=True)
+
+    @pterodactyl.command(name="remove_reinstall")
+    @permissions.is_owner()
+    @app_commands.autocomplete(server_name=server_autocomplete)
+    async def remove_reinstall(self, ctx: discord.Interaction, server_name: str):
+        """Allow reinstall of servers."""
+        async with self.conf.allow_reinstall() as allowed:
             try:
                 allowed.remove(server_name)
             except ValueError:
