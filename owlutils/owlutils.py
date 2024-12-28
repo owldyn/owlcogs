@@ -1,4 +1,6 @@
 import logging
+
+import asyncio
 import re
 from tempfile import NamedTemporaryFile
 
@@ -204,7 +206,7 @@ class OwlUtils(LLMMixin, ListMixin, commands.Cog):
             health_check_url = conf.get("health_check_url")
         if health_check_url:
             self.log.debug("Sending health check to %s", health_check_url)
-            if not (response := requests.get(health_check_url)).ok:
+            if not (response := await asyncio.get_event_loop().run_in_executor(None, requests.get, health_check_url)).ok:
                 self.log.warning("%s %s", response, response.content)
         else:
             self.log.info("Url not set for health check.")
