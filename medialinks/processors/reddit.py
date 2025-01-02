@@ -4,7 +4,6 @@ from io import BytesIO
 import praw
 import requests
 
-from ..processors.libraries import article_summary
 from ..processors.libraries.ffmpeg import Ffmpeg
 from .base import AbstractProcessor, MessageBuilder
 
@@ -113,36 +112,9 @@ class RedditProcessor(AbstractProcessor):
             return self._process_image(reddit_post, match)
         if "youtube" in imglink or "youtu.be" in imglink:
             return self._process_youtube(reddit_post, match)
-        try:
-            # Try to it through the article matcher
-            return self._process_article(reddit_post, match)
-        except Exception:  # pylint: disable=broad-except
-            pass
         # Image processing will always be a fallback. Worst case is the preview doesn't work.
         return self._process_image(reddit_post, match)
 
-    def _process_article(self, reddit_post, match):
-        summarized_article = article_summary.summarize(reddit_post.url, 3)
-        summarized_article = (
-            f"Hoobot has attempted to summarize the article:\n\n{summarized_article}"
-        )
-        title = reddit_post.title
-        comments = self._process_comments(match)
-        if len(summarized_article) < 4096:
-            if len(title) > 255:
-                summarized_article = f"**{title}**\n\n{summarized_article}"
-                title = "From Reddit:"
-            return {
-                "post": self.MessageBuilder(
-                    title=title,
-                    url=self._reddit_link(reddit_post),
-                    description=summarized_article,
-                    footer=self.footer,
-                    spoiler=self.spoiler,
-                ),
-                "comments": comments,
-            }
-        raise self.InvalidURL("Self post is too long!")
 
     def _process_youtube(self, reddit_post, match):
         title = reddit_post.title

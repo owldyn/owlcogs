@@ -4,7 +4,6 @@ import discord
 from redbot.core import Config, checks, commands
 
 from . import processors
-from .processors.libraries import article_summary
 
 
 class MediaLinks(commands.Cog):
@@ -230,16 +229,3 @@ class MediaLinks(commands.Cog):
                             if file:
                                 await ctx.send(file=file)
                     await ctx.message.edit(suppress=True)
-
-    @commands.command()
-    async def summarize(self, ctx, url, num_sentences=10):
-        """Attempt to summarize a given article"""
-        try:
-            summary = article_summary.summarize(url, num_sentences)
-            await ctx.reply(
-                embed=discord.Embed(description=summary), mention_author=False
-            )
-        except Exception:
-            await ctx.reply(
-                "There was an error processing the url!", mention_author=False
-            )
