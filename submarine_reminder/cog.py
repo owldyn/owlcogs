@@ -71,7 +71,8 @@ class SubmarineReminder(commands.Cog):
         first = gain // 10
         even = (gain // 100) * 45
         await ctx.reply(
-            f"""10%: {first}
-45%: {even}""",
+            f"""Maddo       : {first}
+Jenno       : {even}
+Put in chest: {first + even}""",
             mention_author=False,
         )
