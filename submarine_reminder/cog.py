@@ -64,3 +64,14 @@ class SubmarineReminder(commands.Cog):
                         allowed_mentions=discord.AllowedMentions(roles=True),
                     )
                     conf.remove(reminder)
+
+    @commands.command()
+    async def calculate_split(self, ctx: commands.Context, before: int, after: int):
+        gain = after - before
+        first = gain // 10
+        even = (gain // 100) * 45
+        await ctx.reply(
+            f"""10%: {first}
+45%: {even}""",
+            mention_author=False,
+        )

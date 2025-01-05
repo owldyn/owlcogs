@@ -19,3 +19,4 @@ ipykernel
 plotly
 pandas
 kaleido
+ruff
