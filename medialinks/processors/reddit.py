@@ -19,8 +19,8 @@ class RedditProcessor(AbstractProcessor):
     short_reddit_check = re.compile(
         r"(http.?://.?\.?redd.it/)([^ ]*)?"
     )  # this needs to be different so we can pass the link in medialinks.
-    gallery_regex = re.compile(r"http.?://.?.?.?.?reddit.com/gallery/([^/]*)/?.*")
-    comments_shortlink_regex = re.compile(r"http.?://.?.?.?.?reddit.com/comment.?/([^/]*)/comment.?/([^/]*)/?")
+    gallery_regex = re.compile(r"(http.?://.?.?.?.?reddit.com/gallery/)([^/]*)/?.*")
+    comments_shortlink_regex = re.compile(r"(http.?://.?.?.?.?reddit.com/comment.?/)([^/]*)(/comment.?/)([^/]*)/?")
     regex_checks = [short_reddit_check, link_regex, gallery_regex, comments_shortlink_regex]
 
     def __init__(self, settings: dict = None) -> None:
@@ -55,11 +55,11 @@ class RedditProcessor(AbstractProcessor):
         elif match := self.short_reddit_regex.match(url):
             return self._process_short_link(match)
         elif match := self.gallery_regex.match(url):
-            reddit_post = self.reddit.submission(match.group(1))
+            reddit_post = self.reddit.submission(match.group(2))
             return self.process_post(reddit_post, None)
         elif match := self.comments_shortlink_regex.match(url):
-            reddit_post = self.reddit.submission(match.group(1))
-            return self.process_post(reddit_post, match.group(2))
+            reddit_post = self.reddit.submission(match.group(2))
+            return self.process_post(reddit_post, match.group(4))
         else:
             raise self.InvalidURL("URL did not match what I expect from Reddit!")
 
