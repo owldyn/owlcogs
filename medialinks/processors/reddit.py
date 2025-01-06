@@ -19,7 +19,9 @@ class RedditProcessor(AbstractProcessor):
     short_reddit_check = re.compile(
         r"(http.?://.?\.?redd.it/)([^ ]*)?"
     )  # this needs to be different so we can pass the link in medialinks.
-    regex_checks = [short_reddit_check, link_regex]
+    gallery_regex = re.compile(r"http.?://.?.?.?.?reddit.com/gallery/([^/]*)/?.*")
+    comments_shortlink_regex = re.compile(r"http.?://.?.?.?.?reddit.com/comment.?/([^/]*)/comment.?/([^/]*)/?")
+    regex_checks = [short_reddit_check, link_regex, gallery_regex, comments_shortlink_regex]
 
     def __init__(self, settings: dict = None) -> None:
         super().__init__()
@@ -46,20 +48,20 @@ class RedditProcessor(AbstractProcessor):
         self.spoiler = spoiler
         self.url = url
         self.audio = audio
-        short_link = False
-        match = self.link_regex.match(url)
-        if not match:
-            match = self.short_reddit_regex.match(url)
-            short_link = True
-
-        if not match:
-            raise self.InvalidURL("URL did not match what I expect from Reddit!")
-
-        if short_link:
+        if match := self.link_regex.match(url):
+            reddit_post = self.reddit.submission(url=url)
+            comments = match.group(4)
+            return self.process_post(reddit_post, comments)
+        elif match := self.short_reddit_regex.match(url):
             return self._process_short_link(match)
-
-        reddit_post = self.reddit.submission(url=url)
-        return self.process_post(reddit_post, match)
+        elif match := self.gallery_regex.match(url):
+            reddit_post = self.reddit.submission(match.group(1))
+            return self.process_post(reddit_post, None)
+        elif match := self.comments_shortlink_regex.match(url):
+            reddit_post = self.reddit.submission(match.group(1))
+            return self.process_post(reddit_post, match.group(2))
+        else:
+            raise self.InvalidURL("URL did not match what I expect from Reddit!")
 
     def _process_short_link(self, match):
         """Processes a short reddit link"""
@@ -78,10 +80,10 @@ class RedditProcessor(AbstractProcessor):
         match = self.link_regex.match(self._reddit_link(reddit_post))
         return self.process_post(reddit_post, match)
 
-    def process_post(self, reddit_post, match):
+    def process_post(self, reddit_post, comments):
         """Processes and returns the info from a post"""
         if reddit_post.is_self:
-            return self._process_self(reddit_post, match)
+            return self._process_self(reddit_post, comments)
 
         imglink = reddit_post.url
         if "preview.redd.it" in imglink:
@@ -100,25 +102,25 @@ class RedditProcessor(AbstractProcessor):
         if True in [check in imglink for check in check_videos] or (
             "imgur" in imglink and ".gifv" in imglink
         ):
-            return self._process_video(reddit_post, match)
+            return self._process_video(reddit_post, comments)
         if "reddit.com/gallery" in imglink:
-            return self._process_gallery(reddit_post, match)
+            return self._process_gallery(reddit_post, comments)
         if "i.redd.it" in imglink and ".gif" in imglink:
-            return self._process_igif(reddit_post, match)
+            return self._process_igif(reddit_post, comments)
         if True in [
             file_type in imglink
             for file_type in [".png", ".jpg", ".jpeg", ".webp", ".bmp"]
         ]:
-            return self._process_image(reddit_post, match)
+            return self._process_image(reddit_post, comments)
         if "youtube" in imglink or "youtu.be" in imglink:
-            return self._process_youtube(reddit_post, match)
+            return self._process_youtube(reddit_post, comments)
         # Image processing will always be a fallback. Worst case is the preview doesn't work.
-        return self._process_image(reddit_post, match)
+        return self._process_image(reddit_post, comments)
 
 
-    def _process_youtube(self, reddit_post, match):
+    def _process_youtube(self, reddit_post, comments):
         title = reddit_post.title
-        comments = self._process_comments(match)
+        comments = self._process_comments(comments)
         return {
             "post": [
                 self.MessageBuilder(
@@ -136,10 +138,10 @@ class RedditProcessor(AbstractProcessor):
     def _reddit_link(reddit_post):
         return f"https://reddit.com{reddit_post.permalink}"
 
-    def _process_comments(self, match):
-        if match.group(4):
+    def _process_comments(self, comments):
+        if comments:
             try:
-                comment_info = self.reddit.comment(match.group(4))
+                comment_info = self.reddit.comment(comments)
                 title = f"Comment by {comment_info.author.name}"
 
                 if (len(title + comment_info.body) < 4096) and (len(title) < 255):
@@ -154,10 +156,10 @@ class RedditProcessor(AbstractProcessor):
                 pass
         return None
 
-    def _process_self(self, reddit_post, match):
+    def _process_self(self, reddit_post, comments):
         self_text = reddit_post.selftext
         title = reddit_post.title
-        comments = self._process_comments(match)
+        comments = self._process_comments(comments)
         if len(self_text) < 4096:
             if len(title) > 255:
                 self_text = f"**{title}**\n\n{self_text}"
@@ -176,9 +178,9 @@ class RedditProcessor(AbstractProcessor):
             }
         raise self.InvalidURL("Self post is too long!")
 
-    def _process_video(self, reddit_post, match):
+    def _process_video(self, reddit_post, comments):
         title = reddit_post.title
-        comments = self._process_comments(match)
+        comments = self._process_comments(comments)
         video = self._generic_video_dl(
             url=self._reddit_link(reddit_post), audio=self.audio
         )
@@ -193,9 +195,9 @@ class RedditProcessor(AbstractProcessor):
             "comments": comments,
         }
 
-    def _process_image(self, reddit_post, match):
+    def _process_image(self, reddit_post, comments):
         title = reddit_post.title
-        comments = self._process_comments(match)
+        comments = self._process_comments(comments)
         return {
             "post": self.MessageBuilder(
                 title=title,
@@ -207,9 +209,9 @@ class RedditProcessor(AbstractProcessor):
             "comments": comments,
         }
 
-    def _process_igif(self, reddit_post, match):
+    def _process_igif(self, reddit_post, comments):
         title = reddit_post.title
-        comments = self._process_comments(match)
+        comments = self._process_comments(comments)
         image = requests.get(reddit_post.url, timeout=10).content
 
         # If the image is less than DISCORD_MAX_PREVIEW we'll just link it
@@ -244,10 +246,10 @@ class RedditProcessor(AbstractProcessor):
             "comments": comments,
         }
 
-    def _process_gallery_multiple_embeds(self, reddit_post, match):
+    def _process_gallery_multiple_embeds(self, reddit_post, comments):
         """posts a gallery in order, This uses multiple embeds which isn't supported in the current version of redbot (3.4)"""
         title = reddit_post.title
-        comments = self._process_comments(match)
+        comments = self._process_comments(comments)
         gallery = []
         discord_max_preview = 5
         ids = [i["media_id"] for i in reddit_post.gallery_data["items"]]
@@ -266,10 +268,10 @@ class RedditProcessor(AbstractProcessor):
             "comments": comments,
         }
 
-    def _process_gallery(self, reddit_post, match):
+    def _process_gallery(self, reddit_post, comments):
         """posts a gallery in order, only 5 per message or discord won't preview them all"""
         title = reddit_post.title
-        comments = self._process_comments(match)
+        comments = self._process_comments(comments)
         gallery = []
         discord_max_preview = 5
         ids = [i["media_id"] for i in reddit_post.gallery_data["items"]]
