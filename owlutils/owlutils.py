@@ -59,14 +59,25 @@ class OwlUtils(LLMMixin, ListMixin, commands.Cog):
         split_message = msg_content.split(" ")
         if msg_content and re.match(r"what['s ]?", split_message[0]):
             try:
-                ctx = await self.bot.get_context(message)
-                if "what" in split_message[0] and "is" in split_message[1]:
-                    calculate_string = " ".join(split_message[2:])
-                else:
-                    calculate_string = " ".join(split_message[1:])
-                total = Calculator().calculate(" ".join(calculate_string))
-                if total is not None:
-                    await ctx.send(total)
+                ctx: commands.context.Context = await self.bot.get_context(message)
+                async with ctx.typing():
+                    if "what" in split_message[0] and "is" in split_message[1]:
+                        calculate_string = " ".join(split_message[2:])
+                    else:
+                        calculate_string = " ".join(split_message[1:])
+                    try:
+                        total = await asyncio.wait_for(
+                            asyncio.get_event_loop().run_in_executor(
+                                None, Calculator().calculate, " ".join(calculate_string)
+                            ),
+                            5,
+                        )
+                    except TimeoutError:
+                        await ctx.reply(
+                            "Calculations took too long!", mention_author=False
+                        )
+                    if total is not None:
+                        await ctx.reply(total, mention_author=False)
             except IndexError:
                 pass
 
@@ -225,4 +236,3 @@ class OwlUtils(LLMMixin, ListMixin, commands.Cog):
 
         self.health_check.restart()
         await ctx.react_quietly(self.CHECK_MARK)
-
