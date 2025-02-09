@@ -72,12 +72,14 @@ class OwlUtils(LLMMixin, ListMixin, commands.Cog):
                             ),
                             5,
                         )
-                    except TimeoutError:
+                    except Exception:
                         await ctx.reply(
-                            "Calculations took too long!", mention_author=False
+                            "I can't do that math :(", mention_author=False
                         )
+                        return
                     if total is not None:
                         await ctx.reply(total, mention_author=False)
+
             except IndexError:
                 pass
 
