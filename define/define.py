@@ -30,27 +30,31 @@ class Define(commands.Cog):
 
     @commands.command()
     async def define(self, ctx: commands.Context, *words: str):
-        phrase = " ".join(words)
-        definition_response = await asyncio.get_event_loop().run_in_executor(
-            None,
-            requests.get,
-            f"https://api.dictionaryapi.dev/api/v2/entries/en/{phrase}",
-        )
-        if not definition_response.ok:
-            await ctx.reply(f"Definition for {phrase} not found.", mention_author=False)
-            return
-        part_of_speech: defaultdict[str, list[Definition]] = defaultdict(list)
-        for result in definition_response.json():
-            for meaning in result.get("meanings") or []:
-                for definition in meaning.get("definitions") or []:
-                    part_of_speech[meaning.get("partOfSpeech")].append(
-                        Definition(
-                            definition.get("definition"),
-                            meaning.get("partOfSpeech"),
-                            definition.get("example"),
-                            next(iter(result.get("sourceUrls")), None),
+        try:
+            phrase = " ".join(words)
+            definition_response = await asyncio.get_event_loop().run_in_executor(
+                None,
+                requests.get,
+                f"https://api.dictionaryapi.dev/api/v2/entries/en/{phrase}",
+            )
+            if not definition_response.ok:
+                await ctx.reply(f"Definition for {phrase} not found.", mention_author=False)
+                return
+            part_of_speech: defaultdict[str, list[Definition]] = defaultdict(list)
+            for result in definition_response.json():
+                for meaning in result.get("meanings") or []:
+                    for definition in meaning.get("definitions") or []:
+                        part_of_speech[meaning.get("partOfSpeech")].append(
+                            Definition(
+                                definition.get("definition"),
+                                meaning.get("partOfSpeech"),
+                                definition.get("example"),
+                                next(iter(result.get("sourceUrls")), None),
+                            )
                         )
-                    )
+        except Exception as exc:
+            log.error("Failed to get definition.", exc_info=exc)
+            await ctx.reply("Failed to get definition.", mention_author=False)
         message = ""
 
         def format_definition(d: Definition):
