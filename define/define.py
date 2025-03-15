@@ -60,13 +60,19 @@ class Define(commands.Cog):
         def format_definition(d: Definition):
             return (
                 f"- {d.definition}\n"
-                + "-# " + (f"[Source]({d.source}) " if d.source else "")
-                + (f"Example: {d.example}\n" if d.example else "")
+                + (f"-# Example: {d.example}\n" if d.example else "")
             )
 
         for pos, definitions in part_of_speech.items():
             message += f"### {pos.title()}\n" + "\n".join(
                 format_definition(d).rstrip() for d in definitions[:5]
             ) + "\n"
+        
+        sources = {d.source for p in part_of_speech.values() for d in p if d.source}
+        if sources: 
+            message += "-# Sources: "
+            for i, source in enumerate(sources, start=1):
+                message += f"[{i}]({source})"
+        
 
         await ctx.reply(message.strip(), mention_author=False, suppress_embeds=True)
