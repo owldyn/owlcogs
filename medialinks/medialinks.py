@@ -137,6 +137,14 @@ class MediaLinks(commands.Cog):
                         # if -m is in the message,
                         audio = bool(re.match(r".* -m(?=\s|$)", msg_content))
                         comment_only = bool(re.match(r".* -c(?=\s|$)", msg_content))
+                        comment_parents = re.match(r".* -p=?(\d+)?(?=\s|$)", msg_content)
+                        if comment_parents:
+                            if comment_parents.group(1):
+                                comment_parents = int(comment_parents.group(1))
+                            else:
+                                comment_parents = 1
+
+
                         spoiler = False
                         if "as spoiler" in msg_content:
                             spoiler = True
@@ -144,7 +152,7 @@ class MediaLinks(commands.Cog):
                             "".join(list(match)) for match in matches
                         ]  # findall returns the groups separated.
                         await self.process_link(
-                            processor, matches, ctx, name, spoiler, audio, comment_only
+                            processor, matches, ctx, name, spoiler, audio, comment_only, comment_parents
                         )
                         break
 
@@ -170,7 +178,8 @@ class MediaLinks(commands.Cog):
         processor_name: str,
         spoiler: bool = False,
         audio: bool = False,
-        comment_only:bool = False
+        comment_only:bool = False,
+        comment_parents: int = 0
     ):
         async with ctx.typing():
             try:
@@ -182,7 +191,7 @@ class MediaLinks(commands.Cog):
                 with processor(config) as proc:
                     try:
                         message_dict = await proc.process_url(
-                            match, spoiler=spoiler, audio=audio
+                            match, spoiler=spoiler, audio=audio, comment_parents=comment_parents
                         )
                     except processor.VideoTooLarge:
                         await ctx.send("Video was too long to shrink.")
@@ -201,7 +210,7 @@ class MediaLinks(commands.Cog):
                     else:
                         messages_to_send.append(messages)
                     if comment:
-                        messages_to_send.append(comment)
+                        messages_to_send.extend(comment)
 
                     sender = ctx.reply  # only want to reply with one message
                     for index, message in enumerate(messages_to_send):

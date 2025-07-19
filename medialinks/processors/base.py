@@ -176,7 +176,7 @@ class AbstractProcessor(abc.ABC):
         self.logger = logging.getLogger(
             f"owldyn.vidlinks.processor.{self.__class__.__name__}"
         )
-        self.sydl = None
+        self.sydl: TemporaryYoutubeDL
         self.shrinked_file = None
         self.ffmpeg = Ffmpeg()
         self._video_info = None

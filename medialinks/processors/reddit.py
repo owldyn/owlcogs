@@ -2,6 +2,7 @@ import re
 from io import BytesIO
 
 import praw
+import praw.models
 import requests
 
 from ..processors.libraries.ffmpeg import Ffmpeg
@@ -20,13 +21,20 @@ class RedditProcessor(AbstractProcessor):
         r"(http.?://.?\.?redd.it/)([^ ]*)?"
     )  # this needs to be different so we can pass the link in medialinks.
     gallery_regex = re.compile(r"(http.?://.?.?.?.?reddit.com/gallery/)([^/]*)/?.*")
-    comments_shortlink_regex = re.compile(r"(http.?://.?.?.?.?reddit.com/comment.?/)([^/]*)(/comment.?/)([^/]*)/?")
-    regex_checks = [short_reddit_check, link_regex, gallery_regex, comments_shortlink_regex]
+    comments_shortlink_regex = re.compile(
+        r"(http.?://.?.?.?.?reddit.com/comment.?/)([^/]*)(/comment.?/)([^/]*)/?"
+    )
+    regex_checks = [
+        short_reddit_check,
+        link_regex,
+        gallery_regex,
+        comments_shortlink_regex,
+    ]
 
-    def __init__(self, settings: dict = None) -> None:
+    def __init__(self, settings: dict | None = None) -> None:
         super().__init__()
-        self.spoiler = None
-        self.audio = None
+        self.spoiler = False
+        self.audio = False
         self.url = None
         if settings:
             self.reddit = praw.Reddit(**settings)
@@ -40,7 +48,7 @@ class RedditProcessor(AbstractProcessor):
         def prettify_embed(self, output):
             pass
 
-    def verify_link(self, url, audio, spoiler=False, **kwargs):
+    def verify_link(self, url, audio, spoiler=False, comment_parents=0, **kwargs):
         """Verifies the url is valid."""
         # Check both types of reddit urls.
         print(f"rspolier: {spoiler}!", flush=True)
@@ -48,6 +56,7 @@ class RedditProcessor(AbstractProcessor):
         self.spoiler = spoiler
         self.url = url
         self.audio = audio
+        self.comment_parents = comment_parents or 0
         if match := self.link_regex.match(url):
             reddit_post = self.reddit.submission(url=url)
             comments = match.group(4)
@@ -117,7 +126,6 @@ class RedditProcessor(AbstractProcessor):
         # Image processing will always be a fallback. Worst case is the preview doesn't work.
         return self._process_image(reddit_post, comments)
 
-
     def _process_youtube(self, reddit_post, comments):
         title = reddit_post.title
         comments = self._process_comments(comments)
@@ -141,17 +149,46 @@ class RedditProcessor(AbstractProcessor):
     def _process_comments(self, comments):
         if comments:
             try:
-                comment_info = self.reddit.comment(comments)
-                title = f"Comment by {comment_info.author.name}"
 
-                if (len(title + comment_info.body) < 4096) and (len(title) < 255):
+                def _generate(info: praw.models.Comment | praw.models.Submission, child_user=None):
+                    if isinstance(info, praw.models.Submission):
+                        return None
+                    if child_user:
+                        title = f"Reply to {child_user} by {info.author.name}"
+                    else:
+                        title = f"Comment by {info.author.name}"
+                    
+                    if (len(title + info.body) < 4096) and (len(title) < 255):
+                        return self.MessageBuilder(
+                            title=title,
+                            description=info.body,
+                            spoiler=(self.spoiler),
+                            url=f"https://reddit.com{info.permalink}"
+                        )
                     return self.MessageBuilder(
-                        title=title, description=comment_info.body, spoiler=self.spoiler
+                        title=title,
+                        description=f"Comment is too long to post in discord! [Read it here!](https://reddit.com{info.permalink})",
                     )
-                return self.MessageBuilder(
-                    title=title,
-                    description=f"Comment is too long to post in discord! [Read it here!](https://reddit.com{comment_info.permalink})",
-                )
+
+                comment_info = self.reddit.comment(comments)
+                comments_and_submissions: list[praw.models.Submission | praw.models.Comment] = [comment_info]
+                i = 0
+                while i<self.comment_parents:
+                    comment_info = comment_info.parent()
+                    comments_and_submissions.append(comment_info)
+                    i+=1
+                processed_comments = []
+                # We went backwards in the list, so now we reverese it to send them in the right order
+                comments_and_submissions.reverse()
+                comments = [c for c in comments_and_submissions if isinstance(c, praw.models.Comment)]
+                parent_user = None
+                
+                for comment in comments:
+                    processed_comments.append(_generate(comment, parent_user))
+                    parent_user = comment.author.name
+                    
+                    
+                return processed_comments
             except Exception:
                 pass
         return None
