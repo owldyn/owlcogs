@@ -37,11 +37,10 @@ class Owed(commands.Cog):
                     
         rendered = []
         for o in owes:
-            other_user = self.bot.get_user(o[0] if ctx.user.id != o[0] else o[1])
-            if not other_user:
-                continue
-            rendered.append(f"You owe {other_user.mention} {o[2]} {o[3]}.")
-        
+            if ctx.user.id == o[0]:
+                rendered.append(f"{u.mention if (u := self.bot.get_user(o[1])) else 'someone'} owes you {o[2]} {o[3]}.")
+            else:
+                rendered.append(f"You owe {u.mention if (u := self.bot.get_user(o[0])) else 'someone'} {o[2]} {o[3]}.")
         
         await ctx.response.send_message("\n".join(rendered) if rendered else "You don't have any!")
         
