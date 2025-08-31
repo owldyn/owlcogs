@@ -1,4 +1,5 @@
 from .countdown import Countdown
+from .owed import Owed
 from .owlutils import OwlUtils
 from .snooper import StatusSnooper
 from .timestamp import Timestamp
@@ -11,3 +12,4 @@ async def setup(bot):
     await bot.add_cog(StatusSnooper(bot))
     await bot.add_cog(Countdown(bot))
     await bot.add_cog(Timestamp(bot))
+    await bot.add_cog(Owed(bot))
