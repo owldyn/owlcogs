@@ -185,7 +185,8 @@ class StatusSnooper(commands.Cog):
                         )
                     await ctx.followup.send(**kwargs)
 
-        except (AttributeError, IndexError, KeyError):
+        except (AttributeError, IndexError, KeyError) as exc:
+            self.log.error("Error generating last_online %s", exc, exc_info=exc) 
             await ctx.followup.send(
                 "I don't have any history on that user.", ephemeral=True
             )
