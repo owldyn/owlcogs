@@ -16,7 +16,7 @@ py-dactyl
 kubernetes
 paramiko
 ipykernel
-plotly
+plotly==5.24.1
 pandas
-kaleido
+kaleido==0.2.1
 ruff

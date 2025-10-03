@@ -1,8 +1,8 @@
 {
   "requirements": [
     "openai",
-    "plotly",
-    "pandas==2.2.2",
-    "kaleido"
+    "plotly==5.24.1",
+    "kaleido==0.2.1",
+    "pandas==2.2.2"
   ]
 }
