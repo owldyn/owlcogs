@@ -1,5 +1,24 @@
 {
+  "name": "UrbanDict",
+  "author": [
+    "owldyn"
+  ],
+  "short": "Urban Dictionary Lookup",
+  "description": "Lookup definitions from Urban Dictionary directly within your Discord server.",
+  "install_msg": "Thanks for installing!",
   "requirements": [
     "requests"
-  ]
+  ],
+  "tags": [
+    "dictionary",
+    "urban",
+    "lookup"
+  ],
+  "min_bot_version": "3.5.0",
+  "min_python_version": [
+    3,
+    11,
+    13
+  ],
+  "end_user_data_statement": "This cog does not persistently store data or metadata about users."
 }
