@@ -5,7 +5,7 @@
   ],
   "short": "Urban Dictionary Lookup",
   "description": "Lookup definitions from Urban Dictionary directly within your Discord server.",
-  "install_msg": "Thanks for installing!",
+  "install_msg": "Thanks for installing! You can use this cog by using the `[p]defineu <term>` command to look up definitions.",
   "requirements": [
     "requests"
   ],
