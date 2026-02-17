@@ -72,9 +72,7 @@ class OwlUtils(LLMMixin, ListMixin, commands.Cog):
                         5,
                     )
                 except Exception:
-                    await ctx.reply(
-                        "I can't do that math :(", mention_author=False
-                    )
+                    await ctx.reply("I can't do that math :(", mention_author=False)
                     return
                 if total is not None:
                     await ctx.reply(total, mention_author=False)
@@ -101,7 +99,7 @@ class OwlUtils(LLMMixin, ListMixin, commands.Cog):
                 else:
                     file_names.append(file.filename)
                 newline = "\n"
-                reply = f'{f"Files are named {newline}:" if len(file_names) > 1 else "File is named: "}{newline.join(file_names)}'
+                reply = f"{f'Files are named {newline}:' if len(file_names) > 1 else 'File is named: '}{newline.join(file_names)}"
                 ctx = await self.bot.get_context(message)
         if reply:
             await ctx.reply(reply, mention_author=False)
@@ -163,12 +161,13 @@ class OwlUtils(LLMMixin, ListMixin, commands.Cog):
             )
 
     async def tenor_context(self, ctx: discord.Interaction, message: discord.Message):
-        """Right click to get the gif link from tenor"""
-        if "tenor.com" in message.content:
-            await ctx.response.send_message(f"<{message.content}>", ephemeral=True)
+        """Right click to get the gif link"""
+        if re.search("https?://", message.content):
+            escaped_message = re.sub(r"(https?://[^ ]*)", r"<\1>", message.content)
+            await ctx.response.send_message(escaped_message, ephemeral=True)
         else:
             await ctx.response.send_message(
-                "No tenor gifs found in that message.", ephemeral=True
+                "No gifs found in that message.", ephemeral=True
             )
 
     @commands.command()

@@ -1,4 +1,9 @@
 asyncpraw
+numpy
+setuptools
+wheel
+discord
+Red-DiscordBot
 youtube_dl
 tweepy
 pixiv-api
