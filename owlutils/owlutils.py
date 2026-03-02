@@ -10,12 +10,11 @@ from redbot.core import Config, app_commands, commands
 
 from .calculate import Calculator
 from .list import ListMixin
-from .llm_response import LLMMixin
 
 DISCORD_MAX_FILESIZE = 8388119
 
 
-class OwlUtils(LLMMixin, ListMixin, commands.Cog):
+class OwlUtils(ListMixin, commands.Cog):
     """Small utils I'm making for myself."""
 
     CHECK_MARK = "✅"
