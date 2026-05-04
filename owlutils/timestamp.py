@@ -52,12 +52,13 @@ class Timestamp(commands.Cog):
     async def print_timezone(self, message: discord.Message):
         if "<" in message.content and ">" in message.content:
             matches = re.findall(r"\<([^\>]*)\>", message.content)
+            print(matches)
             if matches:
                 timestamps = []
                 ctx: commands.Context = await self.bot.get_context(message)
                 for match in matches:
                     try:
-                        parsed_time = parse(match.group(1)).replace(tzinfo=UTC)
+                        parsed_time = parse(match).replace(tzinfo=UTC)
                         try:
                             timezone = cast(
                                 str,
@@ -76,5 +77,6 @@ class Timestamp(commands.Cog):
                         )
                         timestamps.append(f"<t:{time}:T>")
                     except Exception as e:
+                        self.log.warning("Error parsing timestamp: %s", e, exc_info=e)
                         return
-                await ctx.reply(", ".join(matches), mention_author=False)
+                await ctx.reply(", ".join(timestamps), mention_author=False)
