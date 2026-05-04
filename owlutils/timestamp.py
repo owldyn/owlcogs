@@ -51,29 +51,30 @@ class Timestamp(commands.Cog):
     @commands.Cog.listener("on_message_without_command")
     async def print_timezone(self, message: discord.Message):
         if "<" in message.content and ">" in message.content:
-            match = re.search(r"\<([^\>]*)\>", message.content)
-            if match:
-                try:
-                    parsed_time = parse(match.group(1)).replace(tzinfo=UTC)
-
-                    ctx: commands.Context = await self.bot.get_context(message)
+            matches = re.findall(r"\<([^\>]*)\>", message.content)
+            if matches:
+                timestamps = []
+                ctx: commands.Context = await self.bot.get_context(message)
+                for match in matches:
                     try:
-                        timezone = cast(
-                            str,
-                            await self.conf.user(message.author).get_raw("timezone"),
+                        parsed_time = parse(match.group(1)).replace(tzinfo=UTC)
+                        try:
+                            timezone = cast(
+                                str,
+                                await self.conf.user(message.author).get_raw("timezone"),
+                            )
+                        except Exception:
+                            await ctx.reply(
+                                "You haven't set up your timezone yet! Do that with /timestamps set_timezone."
+                            )
+                            return
+
+                        offset = parsed_time.astimezone(ZoneInfo(timezone)).utcoffset()
+                        time = int(
+                            parsed_time.timestamp()
+                            - (offset.total_seconds() if offset else 0)
                         )
-                    except Exception:
-                        await ctx.reply(
-                            "You haven't set up your timezone yet! Do that with /timestamps set_timezone."
-                        )
+                        timestamps.append(f"<t:{time}:T>")
+                    except Exception as e:
                         return
-                    offset = parsed_time.astimezone(ZoneInfo(timezone)).utcoffset()
-
-                    time = int(
-                        parsed_time.timestamp()
-                        - (offset.total_seconds() if offset else 0)
-                    )
-                    await ctx.reply(f"<t:{time}:f>", mention_author=False)
-
-                except Exception as e:
-                    return
+                await ctx.reply(", ".join(matches), mention_author=False)
