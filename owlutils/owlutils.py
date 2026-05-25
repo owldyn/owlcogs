@@ -1,3 +1,4 @@
+import random
 import asyncio
 import logging
 import re
@@ -235,3 +236,9 @@ class OwlUtils(ListMixin, commands.Cog):
 
         self.health_check.restart()
         await ctx.react_quietly(self.CHECK_MARK)
+
+    @commands.command()
+    async def random(self, ctx, *, choices: str):
+        """Choose a random word from the list"""
+        await ctx.reply(random.choice(choices.split(" ")), mention_author=False)
+
