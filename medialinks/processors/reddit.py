@@ -1,3 +1,4 @@
+import logging
 import re
 from io import BytesIO
 
@@ -7,6 +8,8 @@ import requests
 
 from ..processors.libraries.ffmpeg import Ffmpeg
 from .base import AbstractProcessor, MessageBuilder
+
+log = logging.getLogger(__name__)
 
 
 class RedditProcessor(AbstractProcessor):
@@ -24,11 +27,13 @@ class RedditProcessor(AbstractProcessor):
     comments_shortlink_regex = re.compile(
         r"(http.?://.?.?.?.?reddit.com/comment.?/)([^/]*)(/comment.?/)([^/]*)/?"
     )
+    very_short_comment_link = re.compile(r"(http.?://.?.?.?.?reddit.com/comment.?/)([^/]*)/?.*")
     regex_checks = [
         short_reddit_check,
         link_regex,
         gallery_regex,
         comments_shortlink_regex,
+        very_short_comment_link
     ]
 
     def __init__(self, settings: dict | None = None) -> None:
@@ -57,9 +62,13 @@ class RedditProcessor(AbstractProcessor):
         self.url = url
         self.audio = audio
         self.comment_parents = comment_parents or 0
-        if match := self.link_regex.match(url):
+        if match := (self.link_regex.match(url)):
             reddit_post = self.reddit.submission(url=url)
             comments = match.group(4)
+            return self.process_post(reddit_post, comments)
+        elif match := (self.very_short_comment_link.match(url)):
+            reddit_post = self.reddit.submission(url=url)
+            comments = match.group(2)
             return self.process_post(reddit_post, comments)
         elif match := self.short_reddit_regex.match(url):
             return self._process_short_link(match)
@@ -91,6 +100,7 @@ class RedditProcessor(AbstractProcessor):
 
     def process_post(self, reddit_post, comments):
         """Processes and returns the info from a post"""
+        log.info("Processing %s", reddit_post)
         if reddit_post.is_self:
             return self._process_self(reddit_post, comments)
 

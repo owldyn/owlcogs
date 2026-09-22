@@ -1,3 +1,4 @@
+import logging
 import re
 
 import discord
@@ -5,6 +6,7 @@ from redbot.core import Config, checks, commands
 
 from . import processors
 
+log = logging.getLogger("OwlUtils")
 
 class MediaLinks(commands.Cog):
     """Downloader for media from multiple websites"""
@@ -237,4 +239,5 @@ class MediaLinks(commands.Cog):
                             await sender(**message.send_kwargs, mention_author=False)
                             if file:
                                 await ctx.send(file=file)
-                    await ctx.message.edit(suppress=True)
+                    if ctx.bot_permissions.manage_messages:
+                        await ctx.message.edit(suppress=True)
