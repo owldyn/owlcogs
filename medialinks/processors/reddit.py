@@ -27,7 +27,7 @@ class RedditProcessor(AbstractProcessor):
     comments_shortlink_regex = re.compile(
         r"(http.?://.?.?.?.?reddit.com/comment.?/)([^/]*)(/comment.?/)([^/]*)/?"
     )
-    very_short_comment_link = re.compile(r"(http.?://.?.?.?.?reddit.com/comment.?/)([^/]*)/?.*")
+    very_short_comment_link = re.compile(r"(http.?://.?.?.?.?reddit.com/comment.?/)([^/]*)/?(comment)?/?([^/?]*)?.*")
     regex_checks = [
         short_reddit_check,
         link_regex,
@@ -68,7 +68,7 @@ class RedditProcessor(AbstractProcessor):
             return self.process_post(reddit_post, comments)
         elif match := (self.very_short_comment_link.match(url)):
             reddit_post = self.reddit.submission(url=url)
-            comments = match.group(2)
+            comments = match.group(4)
             return self.process_post(reddit_post, comments)
         elif match := self.short_reddit_regex.match(url):
             return self._process_short_link(match)
