@@ -25,7 +25,10 @@
             pythonPackages.python
             pythonPackages.venvShellHook
           ];
-          packages = [ pkgs.poetry ];
+          packages = [
+            pkgs.poetry
+            pkgs.yt-dlp
+          ];
           venvDir = "./.venv";
         };
       }
